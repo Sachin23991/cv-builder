@@ -1,0 +1,457 @@
+@import url("/fonts/fonts.css");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════
+   CAREERFLOW — PREMIUM DESIGN SYSTEM
+   Inspired by Apple, Stripe, Linear — production grade
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Design Tokens ─── */
+:root {
+  /* Brand palette */
+  --cf-teal:    #0d9488;
+  --cf-teal-light: #5eead4;
+  --cf-sky:     #0ea5e9;
+  --cf-sky-light: #7dd3fc;
+  --cf-accent:  linear-gradient(135deg, #0d9488 0%, #0ea5e9 100%);
+
+  /* Surfaces */
+  --cf-bg:       #ffffff;
+  --cf-bg-sub:   #f8fafc;
+  --cf-bg-card:  #ffffff;
+  --cf-border:   #e2e8f0;
+  --cf-border-hover: #cbd5e1;
+
+  /* Text */
+  --cf-text:     #0f172a;
+  --cf-text-sub: #64748b;
+  --cf-text-muted:#94a3b8;
+
+  /* Shadows */
+  --cf-shadow-sm:  0 1px 2px rgba(0,0,0,0.04);
+  --cf-shadow-md:  0 4px 12px rgba(0,0,0,0.06);
+  --cf-shadow-lg:  0 12px 40px rgba(0,0,0,0.08);
+  --cf-shadow-xl:  0 24px 80px rgba(0,0,0,0.1);
+  --cf-shadow-glow:0 0 40px rgba(13,148,136,0.15);
+
+  /* Motion — Apple-style cubic beziers */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart:cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Layout */
+  --top-nav-bar-height: 4rem;
+  --resume-control-bar-height: 4rem;
+  --resume-padding: 2rem;
+
+  /* Legacy compat */
+  --theme-purple: #0d9488;
+  --theme-blue: #0ea5e9;
+}
+
+/* ─── Base ─── */
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  html, body {
+    @apply bg-white text-slate-900 font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  ::selection {
+    background: rgba(13,148,136,0.15);
+  }
+
+  /* Smooth focus rings everywhere */
+  :focus-visible {
+    outline: 2px solid var(--cf-teal);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ─── Components ─── */
+@layer components {
+
+  /* ── Primary CTA Button ── */
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center rounded-full 
+           px-8 py-3.5 font-semibold text-white overflow-hidden
+           transition-all duration-500;
+    background: var(--cf-accent);
+    box-shadow: 0 4px 15px rgba(13,148,136,0.3);
+  }
+  .btn-primary::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-500;
+    background: linear-gradient(135deg, #14b8a6 0%, #38bdf8 100%);
+  }
+  .btn-primary:hover::before {
+    @apply opacity-100;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(13,148,136,0.35);
+  }
+  .btn-primary:active {
+    transform: translateY(0) scale(0.98);
+  }
+  .btn-primary > * { @apply relative z-10; }
+
+  /* ── Secondary Button ── */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-full
+           border border-gray-200 bg-white px-7 py-3 font-semibold 
+           text-gray-700 transition-all duration-300;
+    box-shadow: var(--cf-shadow-sm);
+  }
+  .btn-secondary:hover {
+    @apply border-gray-300 bg-gray-50;
+    box-shadow: var(--cf-shadow-md);
+    transform: translateY(-1px);
+  }
+
+  /* ── Gradient Text ── */
+  .text-primary {
+    @apply bg-clip-text text-transparent !important;
+    background-image: var(--cf-accent);
+  }
+
+  /* ── Elevated Card ── */
+  .bg-primary {
+    @apply bg-white rounded-2xl;
+    border: 1px solid var(--cf-border);
+    box-shadow: var(--cf-shadow-md);
+    transition: box-shadow 0.4s var(--ease-out-expo), 
+                transform 0.4s var(--ease-out-expo),
+                border-color 0.3s ease;
+  }
+  .bg-primary:hover {
+    box-shadow: var(--cf-shadow-lg);
+    border-color: var(--cf-border-hover);
+  }
+
+  /* ── Focus outlines ── */
+  .outline-theme-purple {
+    @apply transition-all duration-300;
+  }
+  .outline-theme-purple:hover {
+    @apply opacity-95;
+    box-shadow: 0 0 0 2px rgba(13,148,136,0.4);
+  }
+  .outline-theme-purple:focus-visible {
+    box-shadow: 0 0 0 2px rgba(13,148,136,0.6);
+    @apply outline-none;
+  }
+
+  .outline-theme-blue {
+    @apply transition-all duration-300;
+  }
+  .outline-theme-blue:hover {
+    @apply opacity-95;
+    box-shadow: 0 0 0 2px rgba(14,165,233,0.4);
+  }
+  .outline-theme-blue:focus-visible {
+    box-shadow: 0 0 0 2px rgba(14,165,233,0.6);
+    @apply outline-none;
+  }
+
+  .within-outline-theme-purple {
+    @apply transition-all duration-300;
+  }
+  .within-outline-theme-purple:focus-within {
+    box-shadow: 0 0 0 2px rgba(13,148,136,0.4);
+  }
+  .within-outline-theme-purple:hover {
+    @apply opacity-95;
+    box-shadow: 0 0 0 2px rgba(13,148,136,0.3);
+  }
+
+  /* ── Glassmorphism Card (for overlays / modals) ── */
+  .glass-card {
+    @apply rounded-2xl;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: var(--cf-shadow-lg);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATIONS — GPU-accelerated, Apple-quality
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Scroll reveal — used by FadeInSection wrapper ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translate3d(0, 40px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translate3d(-30px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translate3d(30px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale3d(0.95, 0.95, 1); }
+  to   { opacity: 1; transform: scale3d(1, 1, 1); }
+}
+
+/* ── Shimmer gradient (loading / accent) ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(13,148,136,0.08) 50%, 
+    transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* ── Float (hero illustration) ── */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: gentleFloat 6s ease-in-out infinite;
+}
+
+/* ── Pulse ring (CTA attention) ── */
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 rgba(13,148,136,0.4); }
+  70%  { box-shadow: 0 0 0 12px rgba(13,148,136,0); }
+  100% { box-shadow: 0 0 0 0 rgba(13,148,136,0); }
+}
+.animate-pulse-ring {
+  animation: pulseRing 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── Subtle bounce for scroll indicator ── */
+@keyframes subtleBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+
+/* ── Stagger children utility (framer-motion style) ── */
+.stagger-children > * {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.7s var(--ease-out-expo) forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.24s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.32s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.40s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.48s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.56s; }
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE-SPECIFIC — Premium polish for every route
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Navigation ── */
+header[aria-label="Site Header"] {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255,255,255,0.85) !important;
+  border-bottom: 1px solid rgba(226,232,240,0.6) !important;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+header[aria-label="Site Header"]:hover {
+  background: rgba(255,255,255,0.95) !important;
+}
+
+/* ── Nav links ── */
+header nav a {
+  @apply transition-all duration-300 !important;
+  position: relative;
+}
+header nav a::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--cf-accent);
+  transition: width 0.3s var(--ease-out-expo), left 0.3s var(--ease-out-expo);
+  border-radius: 1px;
+}
+header nav a:hover::after {
+  width: 60%;
+  left: 20%;
+}
+
+/* ── Resume Builder: Left form panel ── */
+.grid > .col-span-3:first-child section {
+  animation: fadeInLeft 0.6s var(--ease-out-expo);
+}
+
+/* ── Resume Builder: Right preview panel ── */
+.grid > .col-span-3:last-child {
+  animation: fadeInRight 0.6s var(--ease-out-expo);
+}
+
+/* ── Form sections — lift effect on focus ── */
+form, [class*="FormSection"] {
+  @apply transition-all duration-300;
+  animation: fadeInUp 0.5s var(--ease-out-expo) backwards;
+}
+form:nth-child(1) { animation-delay: 0.05s; }
+form:nth-child(2) { animation-delay: 0.1s; }
+form:nth-child(3) { animation-delay: 0.15s; }
+form:nth-child(4) { animation-delay: 0.2s; }
+form:nth-child(5) { animation-delay: 0.25s; }
+
+/* ── Form input styling ── */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  @apply transition-all duration-300;
+  border: 1px solid var(--cf-border);
+  border-radius: 10px;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--cf-teal);
+  box-shadow: 0 0 0 3px rgba(13,148,136,0.1);
+}
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="tel"]:hover,
+input[type="url"]:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--cf-border-hover);
+}
+
+/* ── Resume Import page card ── */
+main > div[class*="rounded-md border"] {
+  @apply rounded-2xl !important;
+  border: 1px solid var(--cf-border) !important;
+  box-shadow: var(--cf-shadow-lg) !important;
+  animation: scaleIn 0.5s var(--ease-out-expo);
+}
+
+/* ── Resume Dropzone ── */
+[class*="ResumeDropzone"],
+div[class*="dropzone"] {
+  @apply transition-all duration-500;
+}
+[class*="border-dashed"] {
+  border-style: dashed !important;
+  border-width: 2px !important;
+  border-color: var(--cf-border) !important;
+  @apply rounded-xl !important;
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+[class*="border-dashed"]:hover {
+  border-color: var(--cf-teal) !important;
+  background: rgba(13,148,136,0.02) !important;
+  box-shadow: 0 0 0 4px rgba(13,148,136,0.08) !important;
+}
+
+/* ── Resume Parser: example cards ── */
+article[class*="cursor-pointer"] {
+  @apply rounded-xl !important;
+  transition: all 0.3s var(--ease-out-expo) !important;
+}
+article[class*="cursor-pointer"]:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--cf-shadow-md) !important;
+}
+article[class*="border-blue-400"] {
+  border-color: var(--cf-teal) !important;
+  box-shadow: 0 0 0 1px var(--cf-teal), var(--cf-shadow-sm) !important;
+}
+
+/* ── Steps Section ── */
+section[class*="bg-sky-50"] {
+  @apply rounded-2xl !important;
+  background: linear-gradient(135deg, rgba(240,253,250,0.7) 0%, rgba(240,249,255,0.7) 100%) !important;
+  border: 1px solid rgba(13,148,136,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* ── Step number circles ── */
+section[class*="bg-sky-50"] .bg-primary {
+  background: var(--cf-accent) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(13,148,136,0.3) !important;
+}
+
+/* ── Testimonial cards ── */
+figure[class*="rounded-3xl"] {
+  @apply transition-all duration-700 !important;
+  box-shadow: var(--cf-shadow-md) !important;
+}
+figure[class*="rounded-3xl"]:hover {
+  box-shadow: var(--cf-shadow-xl) !important;
+}
+
+/* ── Documentation headings ── */
+h2[class*="text-primary"] {
+  letter-spacing: -0.02em;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* ── Dot background (kept for compat, refined) ── */
+.bg-dot {
+  background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY — Respect prefers-reduced-motion
+   ═══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-float,
+  .animate-shimmer,
+  .animate-pulse-ring {
+    animation: none !important;
+  }
+}
