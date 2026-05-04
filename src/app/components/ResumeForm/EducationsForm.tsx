@@ -4,7 +4,6 @@ import {
   Input,
 } from "components/ResumeForm/Form/InputGroup";
 import { BulletListIconButton } from "components/ResumeForm/Form/IconButton";
-import type { CreateHandleChangeArgsWithDescriptions } from "components/ResumeForm/types";
 import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
 import { changeEducations, selectEducations } from "lib/redux/resumeSlice";
 import type { ResumeEducation } from "lib/redux/types";
@@ -24,10 +23,8 @@ export const EducationsForm = () => {
     <Form form={form} addButtonText="Add School">
       {educations.map(({ school, degree, gpa, date, descriptions }, idx) => {
         const handleEducationChange = (
-          ...[
-            field,
-            value,
-          ]: CreateHandleChangeArgsWithDescriptions<ResumeEducation>
+          field: keyof ResumeEducation,
+          value: string | string[]
         ) => {
           dispatch(changeEducations({ idx, field, value } as any));
         };

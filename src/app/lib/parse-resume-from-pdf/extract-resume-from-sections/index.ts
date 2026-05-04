@@ -5,6 +5,7 @@ import { extractEducation } from "lib/parse-resume-from-pdf/extract-resume-from-
 import { extractWorkExperience } from "lib/parse-resume-from-pdf/extract-resume-from-sections/extract-work-experience";
 import { extractProject } from "lib/parse-resume-from-pdf/extract-resume-from-sections/extract-project";
 import { extractSkills } from "lib/parse-resume-from-pdf/extract-resume-from-sections/extract-skills";
+import { initialResumeState } from "lib/redux/resumeSlice";
 
 /**
  * Step 4. Extract resume from sections.
@@ -30,6 +31,7 @@ export const extractResumeFromSections = (
   const { skills } = extractSkills(sections);
 
   return {
+    ...initialResumeState,
     profile,
     educations,
     workExperiences,

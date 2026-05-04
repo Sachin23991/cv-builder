@@ -1,86 +1,104 @@
-import type { TemplateAdapter } from "./adapters";
-import { impactCVThemes } from "./impactcv/themes";
-import { reactiveResumeTemplates } from "./reactiveresume/templates";
+/**
+ * Template Registry
+ * Fetches template configurations from backend and provides them to frontend
+ */
 
-// Legacy template (current React-PDF based)
-const legacyTemplate: TemplateAdapter = {
-  id: "legacy-default",
-  name: "Classic PDF",
-  source: "legacy",
-  category: "professional",
-  paradigm: "pdf",
-  description: "Traditional PDF resume with colored header",
-};
+import type { TemplateAdapter } from './adapters';
+import { impactCVThemes } from './impactcv/themes';
+import { apiUrl } from '../api';
 
-// Custom HTML Template (Overleaf style)
-const customHTMLTemplate: TemplateAdapter = {
-  id: "custom-html",
-  name: "Custom HTML (Overleaf)",
-  source: "custom-html" as any,
-  category: "creative",
-  paradigm: "html" as any,
-  description: "Write your own raw HTML/CSS for complete freedom",
-};
+// Default templates while backend loads
+const defaultTemplates: TemplateAdapter[] = [
+  {
+    id: 'legacy-default',
+    name: 'Classic PDF',
+    source: 'legacy',
+    category: 'professional',
+    paradigm: 'pdf',
+    description: 'Traditional PDF resume with colored header',
+  },
+  {
+    id: 'custom-html',
+    name: 'Custom HTML',
+    source: 'custom-html',
+    category: 'creative',
+    paradigm: 'html',
+    description: 'Write your own HTML/CSS template',
+  },
+];
 
 // Impact-CV themes (20 themes)
 const impactCVAdapters: TemplateAdapter[] = impactCVThemes.map((theme) => ({
   id: theme.id,
   name: theme.name,
-  source: "impact-cv" as const,
+  source: 'impact-cv' as const,
   category: theme.category,
-  paradigm: "config" as const,
+  paradigm: 'config' as const,
   preview: theme.preview,
   description: `${theme.name} style template from Impact-CV`,
-  render: () => {
-    // Placeholder - actual rendering component created separately
-    return null as unknown as JSX.Element;
-  },
+  render: () => null as unknown as JSX.Element,
   getDefaultSettings: () => ({
     layout: { sidebarWidth: 30, main: [], sidebar: [] },
-    design: { colors: { primary: "#38bdf8", text: "#171717", background: "#ffffff" } },
+    design: { colors: { primary: '#38bdf8', text: '#171717', background: '#ffffff' } },
   }),
 }));
 
-// Reactive-Resume templates (14 templates)
-const reactiveResumeAdapters: TemplateAdapter[] = reactiveResumeTemplates.map((template) => ({
-  id: template.id,
-  name: template.name,
-  source: "reactive-resume" as const,
-  category: template.category,
-  paradigm: "component" as const,
-  description: template.description,
-  render: () => {
-    return null as unknown as JSX.Element;
-  },
-  getDefaultSettings: () => ({
-    layout: { sidebarWidth: 30, main: [], sidebar: [] },
-    design: { colors: { primary: template.color, text: "#171717", background: "#ffffff" } },
-  }),
-}));
+// Fetch templates from backend
+let backendTemplates: TemplateAdapter[] = [];
+let templatesLoaded = false;
 
-// All templates combined
+export async function fetchTemplatesFromBackend(): Promise<TemplateAdapter[]> {
+  try {
+    const response = await fetch(apiUrl('/api/templates'));
+    const data = await response.json();
+
+    if (data.success && data.data?.templates) {
+      backendTemplates = data.data.templates.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        source: 'backend' as const,
+        category: t.category as TemplateAdapter['category'],
+        paradigm: 'config' as const,
+        description: t.description,
+        preview: t.preview,
+        config: t, // Store full config for rendering
+        render: () => null as unknown as JSX.Element,
+        getDefaultSettings: () => ({
+          layout: { sidebarWidth: t.layout?.sidebarWidth || 30, main: t.layout?.mainSections || [], sidebar: t.layout?.sidebarSections || [] },
+          design: { colors: { primary: t.primaryColor || '#3b82f6', text: '#171717', background: '#ffffff' } },
+        }),
+      }));
+      templatesLoaded = true;
+    }
+  } catch (error) {
+    console.error('Failed to fetch templates from backend:', error);
+  }
+
+  return backendTemplates;
+}
+
+// Combined template registry
 export const templateRegistry: TemplateAdapter[] = [
-  legacyTemplate,
-  customHTMLTemplate,
+  ...defaultTemplates,
   ...impactCVAdapters,
-  ...reactiveResumeAdapters,
+  ...backendTemplates,
 ];
 
 // Templates by source
 export const templatesBySource = {
-  legacy: templateRegistry.filter((t) => t.source === "legacy"),
-  "custom-html": templateRegistry.filter((t) => t.source === "custom-html"),
-  "impact-cv": templateRegistry.filter((t) => t.source === "impact-cv"),
-  "reactive-resume": templateRegistry.filter((t) => t.source === "reactive-resume"),
+  legacy: templateRegistry.filter((t) => t.source === 'legacy'),
+  'custom-html': templateRegistry.filter((t) => t.source === 'custom-html'),
+  'impact-cv': templateRegistry.filter((t) => t.source === 'impact-cv'),
+  backend: backendTemplates,
 };
 
 // Templates by category
 export const templatesByCategory = {
-  professional: templateRegistry.filter((t) => t.category === "professional"),
-  creative: templateRegistry.filter((t) => t.category === "creative"),
-  academic: templateRegistry.filter((t) => t.category === "academic"),
-  modern: templateRegistry.filter((t) => t.category === "modern"),
-  minimal: templateRegistry.filter((t) => t.category === "minimal"),
+  professional: templateRegistry.filter((t) => t.category === 'professional'),
+  creative: templateRegistry.filter((t) => t.category === 'creative'),
+  academic: templateRegistry.filter((t) => t.category === 'academic'),
+  modern: templateRegistry.filter((t) => t.category === 'modern'),
+  minimal: templateRegistry.filter((t) => t.category === 'minimal'),
 };
 
 // Get template by ID
@@ -102,13 +120,21 @@ export const searchTemplates = (query: string): TemplateAdapter[] => {
 // Total count
 export const templateCount = {
   total: templateRegistry.length,
-  legacy: templatesBySource.legacy.length,
-  "impact-cv": templatesBySource["impact-cv"].length,
-  "reactive-resume": templatesBySource["reactive-resume"].length,
+  default: defaultTemplates.length,
+  'impact-cv': impactCVAdapters.length,
+  backend: backendTemplates.length,
 };
 
-console.log(`[Template Registry] Loaded ${templateCount.total} templates:`, {
-  legacy: templateCount.legacy,
-  "impact-cv": templateCount["impact-cv"],
-  "reactive-resume": templateCount["reactive-resume"],
-});
+// Update registry with backend templates
+export const updateTemplateRegistry = (newTemplates: TemplateAdapter[]) => {
+  backendTemplates = newTemplates;
+  templatesLoaded = true;
+  // Refresh the registry
+  Object.assign(templateRegistry, [
+    ...defaultTemplates,
+    ...impactCVAdapters,
+    ...backendTemplates,
+  ]);
+};
+
+console.log(`[Template Registry] Initialized with ${templateCount.total} templates`);

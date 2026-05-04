@@ -1,9 +1,16 @@
 "use client";
 import { getHasUsedAppBefore } from "lib/redux/local-storage";
-import { ResumeDropzone } from "components/ResumeDropzone";
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+
+const ResumeDropzone = dynamic(() =>
+  import("components/ResumeDropzone").then((mod) => ({
+    default: mod.ResumeDropzone,
+  })),
+  { ssr: false }
+);
 
 export default function ImportResume() {
   const [hasUsedAppBefore, setHasUsedAppBefore] = useState(false);

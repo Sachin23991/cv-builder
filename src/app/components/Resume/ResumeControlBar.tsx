@@ -30,14 +30,16 @@ const ResumeControlBar = ({
 
   // Hook to update pdf when document changes
   useEffect(() => {
-    update();
+    update(document);
   }, [update, document]);
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 flex h-[var(--resume-control-bar-height)] items-center justify-center px-[var(--resume-padding)] text-gray-600 lg:justify-between">
-      <div className="flex items-center gap-2">
-        <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
+    <div className="resume-control-pill" role="region" aria-label="Resume Controls">
+      <div className="flex items-center gap-3">
+        <MagnifyingGlassIcon className="h-5 w-5 text-white/80" aria-hidden="true" />
         <input
+          aria-label="Zoom"
+          className="zoom-slider"
           type="range"
           min={0.5}
           max={1.5}
@@ -48,8 +50,8 @@ const ResumeControlBar = ({
             setScale(Number(e.target.value));
           }}
         />
-        <div className="w-10">{`${Math.round(scale * 100)}%`}</div>
-        <label className="hidden items-center gap-1 lg:flex">
+        <div className="w-12 text-sm text-white/80">{`${Math.round(scale * 100)}%`}</div>
+        <label className="hidden items-center gap-1 lg:flex text-white/70">
           <input
             type="checkbox"
             className="mt-0.5 h-4 w-4"
@@ -60,12 +62,12 @@ const ResumeControlBar = ({
         </label>
       </div>
       <a
-        className="ml-1 flex items-center gap-1 rounded-md border border-gray-300 px-3 py-0.5 hover:bg-gray-100 lg:ml-8"
+        className="download-btn pulse"
         href={instance.url!}
         download={fileName}
       >
         <ArrowDownTrayIcon className="h-4 w-4" />
-        <span className="whitespace-nowrap">Download Resume</span>
+        <span className="whitespace-nowrap text-sm font-semibold">Download</span>
       </a>
     </div>
   );

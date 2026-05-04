@@ -6,12 +6,16 @@ import testimonialVivianSrc from "public/assets/testimonial-vivian.jpg";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTailwindBreakpoints } from "lib/hooks/useTailwindBreakpoints";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const TESTIMONIALS = [
   {
     src: testimonialSpiegelSrc,
     quote:
-      "Students often make silly mistakes on their resume by using inconsistent bullet points or font sizes. ResumeMaker’s auto format feature is a great help to ensure consistent format.",
+      "Students often make silly mistakes on their resume by using inconsistent bullet points or font sizes. ResumeMaker's auto format feature is a great help to ensure consistent format.",
     name: "Ms. Spiegel",
     title: "Educator",
   },
@@ -31,103 +35,76 @@ const TESTIMONIALS = [
   },
 ];
 
-const LG_TESTIMONIALS_CLASSNAMES = [
-  "z-10",
-  "translate-x-44 translate-y-24 opacity-40",
-  "translate-x-32 -translate-y-28 opacity-40",
-];
-const SM_TESTIMONIALS_CLASSNAMES = ["z-10", "opacity-0", "opacity-0"];
-const ROTATION_INTERVAL_MS = 8 * 1000; // 8s
+const ROTATION_INTERVAL_MS = 8 * 1000;
 
 export const Testimonials = ({ children }: { children?: React.ReactNode }) => {
-  const [testimonialsClassNames, setTestimonialsClassNames] = useState(
-    LG_TESTIMONIALS_CLASSNAMES
-  );
-  const isHoveredOnTestimonial = useRef(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
+
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (!isHoveredOnTestimonial.current) {
-        setTestimonialsClassNames((preClassNames) => {
-          return [preClassNames[1], preClassNames[2], preClassNames[0]];
-        });
-      }
-    }, ROTATION_INTERVAL_MS);
-    return () => clearInterval(intervalId);
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".testimonial-title",
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.8, ease: "power4.out", scrollTrigger: { trigger: sectionRef.current, start: "top 80%" } }
+      );
+    }, sectionRef);
+    return () => ctx.revert();
   }, []);
 
-  const { isLg } = useTailwindBreakpoints();
   useEffect(() => {
-    setTestimonialsClassNames(
-      isLg ? LG_TESTIMONIALS_CLASSNAMES : SM_TESTIMONIALS_CLASSNAMES
-    );
-  }, [isLg]);
+    const wrap = wrapRef.current;
+    const track = trackRef.current;
+    if (!wrap || !track) return;
+
+    // duplicate content for seamless loop
+    const content = track.innerHTML;
+    track.innerHTML = content + content;
+    const width = track.scrollWidth / 2;
+
+    tlRef.current = gsap.timeline({ repeat: -1, defaults: { ease: "none" } });
+    tlRef.current.to(track, { x: -width, duration: 18 });
+
+    const handleEnter = () => tlRef.current?.pause();
+    const handleLeave = () => tlRef.current?.play();
+    wrap.addEventListener("mouseenter", handleEnter);
+    wrap.addEventListener("mouseleave", handleLeave);
+
+    return () => {
+      tlRef.current?.kill();
+      wrap.removeEventListener("mouseenter", handleEnter);
+      wrap.removeEventListener("mouseleave", handleLeave);
+    };
+  }, []);
 
   return (
-    <section className="mx-auto -mt-2 px-8 pb-24">
-      <h2 className="mb-8 text-center text-3xl font-bold">
-        People{" "}
-        <Image src={heartSrc} alt="love" className="-mt-1 inline-block w-7" />{" "}
-        ResumeMaker
+    <section ref={sectionRef} className="mx-auto -mt-2 px-8 pb-20">
+      <h2 className="testimonial-title mb-8 text-center text-3xl font-bold text-slate-900">
+        People <Image src={heartSrc} alt="love" className="-mt-1 inline-block w-7" /> ResumeMaker
       </h2>
-      <div className="mx-auto mt-10 h-[235px] max-w-lg lg:h-[400px] lg:pt-28">
-        <div className="relative lg:ml-[-50px]">
-          {TESTIMONIALS.map(({ src, quote, name, title }, idx) => {
-            const className = testimonialsClassNames[idx];
-            return (
-              <div
+      <div className="mx-auto mt-10 max-w-full">
+        <div ref={wrapRef} className="testimonial-wrap overflow-hidden">
+          <div ref={trackRef} className="testimonial-track flex gap-6 items-stretch">
+            {TESTIMONIALS.map(({ src, quote, name, title }, idx) => (
+              <blockquote
                 key={idx}
-                className={`bg-primary absolute max-w-lg rounded-[1.7rem] bg-opacity-30 shadow-md transition-all duration-1000 ease-linear ${className}`}
-                onMouseEnter={() => {
-                  if (className === "z-10") {
-                    isHoveredOnTestimonial.current = true;
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (className === "z-10") {
-                    isHoveredOnTestimonial.current = false;
-                  }
-                }}
+                className="testimonial-card min-w-[280px] max-w-[360px] rounded-2xl bg-white p-6 text-slate-900 shadow-md"
               >
-                <figure className="m-1 flex gap-5 rounded-3xl bg-white p-5 text-gray-900 lg:p-7">
-                  <Image
-                    className="hidden h-24 w-24 select-none rounded-full lg:block"
-                    src={src}
-                    alt="profile"
-                  />
-                  <div>
-                    <blockquote>
-                      <p className="before:content-['“'] after:content-['”']">
-                        {quote}
-                      </p>
-                    </blockquote>
-                    <figcaption className="mt-3">
-                      <div className="hidden gap-2 lg:flex">
-                        <div className="font-semibold">{name}</div>
-                        <div
-                          className="select-none text-gray-700"
-                          aria-hidden="true"
-                        >
-                          •
-                        </div>
-                        <div className="text-gray-600">{title}</div>
-                      </div>
-                      <div className="flex gap-4 lg:hidden">
-                        <Image
-                          className=" block h-12 w-12 select-none rounded-full"
-                          src={src}
-                          alt="profile"
-                        />
-                        <div>
-                          <div className="font-semibold">{name}</div>
-                          <div className="text-gray-600">{title}</div>
-                        </div>
-                      </div>
-                    </figcaption>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full overflow-hidden bg-white/5">
+                    <Image src={src} alt={name} className="h-full w-full object-cover" />
                   </div>
-                </figure>
-              </div>
-            );
-          })}
+                  <div>
+                    <div className="font-semibold text-slate-900">{name}</div>
+                    <div className="text-xs text-slate-500">{title}</div>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-6 text-slate-700">{quote}</p>
+              </blockquote>
+            ))}
+          </div>
         </div>
       </div>
       {children}

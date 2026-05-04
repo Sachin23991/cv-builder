@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { readPdf } from "lib/parse-resume-from-pdf/read-pdf";
 import type { TextItems } from "lib/parse-resume-from-pdf/types";
 import { groupTextItemsIntoLines } from "lib/parse-resume-from-pdf/group-text-items-into-lines";
 import { groupLinesIntoSections } from "lib/parse-resume-from-pdf/group-lines-into-sections";
@@ -10,8 +9,16 @@ import { cx } from "lib/cx";
 import { Heading, Link, Paragraph } from "components/documentation";
 import { ResumeTable } from "resume-parser/ResumeTable";
 import { FlexboxSpacer } from "components/FlexboxSpacer";
-import { ResumeParserAlgorithmArticle } from "resume-parser/ResumeParserAlgorithmArticle";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
+
+const ResumeParserAlgorithmArticle = dynamic(
+  () =>
+    import("resume-parser/ResumeParserAlgorithmArticle").then(
+      (mod) => mod.ResumeParserAlgorithmArticle
+    ),
+  { ssr: false }
+);
 
 const RESUME_EXAMPLES = [
   {
@@ -46,6 +53,7 @@ export default function ResumeParser() {
 
   useEffect(() => {
     async function test() {
+      const { readPdf } = await import("lib/parse-resume-from-pdf/read-pdf");
       const textItems = await readPdf(fileUrl);
       setTextItems(textItems);
     }

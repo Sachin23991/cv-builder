@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm start *)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('canvas'\\)\")",
+      "Bash(npm ls *)",
+      "Bash(git restore *)",
+      "Bash(git ls-tree *)",
+      "Bash(git submodule *)",
+      "WebSearch",
+      "Bash(npm search *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(taskkill /F /IM node.exe)"
+    ]
+  }
+}

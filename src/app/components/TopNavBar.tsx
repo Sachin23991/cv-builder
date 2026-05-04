@@ -1,37 +1,45 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import logoSrc from "public/logo.svg";
+import { useEffect, useRef } from "react";
 
 export const TopNavBar = () => {
   const pathName = usePathname();
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const header = headerRef.current;
+    if (!header) return;
+
+    const updateHeader = () => {
+      header.classList.toggle("scrolled", window.scrollY > 80);
+    };
+
+    updateHeader();
+    window.addEventListener("scroll", updateHeader, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", updateHeader);
+    };
+  }, []);
 
   return (
     <header
+      ref={headerRef}
       aria-label="Site Header"
-      className="flex h-[var(--top-nav-bar-height)] items-center border-b-2 border-gray-100 bg-white px-3 lg:px-12"
+      className="flex h-[var(--top-nav-bar-height)] items-center px-3 lg:px-12"
     >
       <div className="flex h-10 w-full items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <img
-            src="/favicon.ico"
-            alt="ResumeMaker Logo"
-            className="h-8 w-8"
-          />
-          <span className="text-xl font-bold tracking-tight text-slate-800">ResumeMaker</span>
+          <img src="/favicon.ico" alt="ResumeMaker Logo" className="h-8 w-8" />
+          <span className="text-xl font-bold tracking-tight text-sky-500">ResumeMaker</span>
         </Link>
-        <nav
-          aria-label="Site Nav Bar"
-          className="flex items-center gap-2 text-sm font-medium"
-        >
-          {[
-            ["/resume-builder", "Builder"],
-            ["/resume-parser", "Parser"],
-          ].map(([href, text]) => (
+        <nav aria-label="Site Nav Bar" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          {[["/resume-builder", "Builder"], ["/resume-parser", "Parser"]].map(([href, text]) => (
             <Link
               key={text}
-              className="rounded-md px-1.5 py-2 text-gray-500 hover:bg-gray-100 focus-visible:bg-gray-100 lg:px-4"
+              className="rounded-md px-1.5 py-2 text-slate-700 hover:bg-sky-50 hover:text-sky-600 focus-visible:bg-sky-50 lg:px-4"
               href={href}
             >
               {text}

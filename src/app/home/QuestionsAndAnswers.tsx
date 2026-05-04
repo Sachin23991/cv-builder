@@ -1,4 +1,10 @@
+"use client";
+import { useEffect, useRef } from "react";
 import { Link } from "components/documentation";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const QAS = [
   {
@@ -61,9 +67,9 @@ const QAS = [
           <br />
           While other resume builders may require email sign up and store user
           data in their databases, ResumeMaker believes that resume data should
-          remain private and accessible only on user’s local machine. Therefore,
-          ResumeMaker doesn’t require sign up to use the app, and all inputted
-          data is stored in user’s browser that only user has access to.
+          remain private and accessible only on user's local machine. Therefore,
+          ResumeMaker doesn't require sign up to use the app, and all inputted
+          data is stored in user's browser that only user has access to.
         </p>
       </>
     ),
@@ -106,7 +112,7 @@ const QAS = [
         <p>
           Another great way to support ResumeMaker is by spreading the words.
           Share it with your friends, on social media platforms, or with your
-          school’s career center. Our goal is to reach more people who struggle
+          school's career center. Our goal is to reach more people who struggle
           with creating their resume, and your word-of-mouth support would be
           greatly appreciated. If you use Github, you can also show your support
           by{" "}
@@ -121,12 +127,38 @@ const QAS = [
 ];
 
 export const QuestionsAndAnswers = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Q&A items with staggered reveal
+      gsap.fromTo(
+        ".qa-item",
+        { opacity: 0, x: -30 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.6,
+          ease: "power4.out",
+          stagger: 0.1,
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section className="mx-auto max-w-3xl divide-y divide-gray-300 lg:mt-4 lg:px-2">
+    <section ref={sectionRef} className="mx-auto max-w-3xl divide-y divide-gray-300 lg:mt-4 lg:px-2">
       <h2 className="text-center text-3xl font-bold">Questions & Answers</h2>
       <div className="mt-6 divide-y divide-gray-300">
         {QAS.map(({ question, answer }) => (
-          <div key={question} className="py-6">
+          <div key={question} className="qa-item py-6">
             <h3 className="font-semibold leading-7">{question}</h3>
             <div className="mt-3 grid gap-2 leading-7 text-gray-600">
               {answer}

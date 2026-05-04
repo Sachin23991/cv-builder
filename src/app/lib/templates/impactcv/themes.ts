@@ -1,4 +1,4 @@
-import type { ImpactCVThemeConfig } from "./adapters";
+import type { ImpactCVThemeConfig } from "../adapters";
 
 export const impactCVThemes: ImpactCVThemeConfig[] = [
   {

@@ -1,51 +1,82 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAppSelector } from "lib/redux/hooks";
 import { selectResume } from "lib/redux/resumeSlice";
 import { selectTemplateSettings, selectSettings } from "lib/redux/settingsSlice";
-import { getTemplateById } from "lib/templates";
-import { impactCVThemes } from "lib/templates/impactcv/themes";
+import { apiUrl } from "lib/api";
 
-// Impact-CV style preview renderer
-const ImpactCVPreview = ({ themeId }: { themeId: string }) => {
-  const resume = useAppSelector(selectResume);
-  const theme = impactCVThemes.find((t) => t.id === themeId);
+// Template configuration from backend
+interface TemplateConfig {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  primaryColor: string;
+  layout: {
+    type: string;
+    sidebarWidth: number;
+    mainSections: string[];
+    sidebarSections: string[];
+  };
+  typography: {
+    headingFont: string;
+    bodyFont: string;
+    headingSize: number;
+    bodySize: number;
+    lineHeight: number;
+  };
+  styles: {
+    headerAlign: string;
+    sectionSpacing: number;
+    itemSpacing: number;
+    borderRadius: number;
+    cardStyle: string;
+  };
+  sections: Record<string, any>;
+}
 
-  if (!theme) return <div>Theme not found</div>;
+// Fetch templates from backend
+async function fetchBackendTemplates(): Promise<TemplateConfig[]> {
+  try {
+    const response = await fetch(apiUrl('/api/templates'));
+    const data = await response.json();
+    if (data.success && data.data?.templates) {
+      return data.data.templates;
+    }
+  } catch (error) {
+    console.error('Failed to fetch templates:', error);
+  }
+  return [];
+}
 
-  const { profile, workExperiences, educations, projects, skills } = resume;
+// Dynamic Template Renderer - Reads config from backend and renders accordingly
+const ConfigBasedTemplate = ({ templateConfig, resume }: { templateConfig: TemplateConfig; resume: any }) => {
+  const {
+    layout,
+    typography,
+    styles,
+    sections,
+    primaryColor
+  } = templateConfig;
 
-  return (
-    <div className={`${theme.fontClass} ${theme.spacing} ${theme.backgroundClass || ""}`}>
-      {/* Header */}
-      <header className={`${theme.headerStyle} ${theme.color} mb-6`}>
-        <h1 className="font-bold">{profile.name || "Your Name"}</h1>
-        {profile.summary && <p className="mt-2 text-sm font-normal opacity-80">{profile.summary}</p>}
-      </header>
+  const { profile, workExperiences, educations, projects, skills, languages, profiles } = resume;
 
-      {/* Contact Info */}
-      <div className="mb-4 flex flex-wrap gap-4 text-sm">
-        {profile.email && <span>{profile.email}</span>}
-        {profile.phone && <span>{profile.phone}</span>}
-        {profile.location && <span>{profile.location}</span>}
-        {profile.url && <span>{profile.url}</span>}
-      </div>
-
-      {/* Work Experience */}
-      {workExperiences.length > 0 && workExperiences[0].company && (
-        <section className="mb-6">
-          <h2 className={theme.sectionTitleStyle}>Work Experience</h2>
-          <div className={theme.sectionContentStyle}>
-            {workExperiences.map((exp, idx) => (
+  // Helper to render section content
+  const renderSectionContent = (sectionType: string) => {
+    switch (sectionType) {
+      case 'experience':
+        return workExperiences.length > 0 && workExperiences[0].company ? (
+          <div className="space-y-4">
+            {workExperiences.map((exp: any, idx: number) => (
               <div key={idx} className="mb-4">
-                <div className="flex justify-between">
-                  <h3 className="font-semibold">{exp.jobTitle}</h3>
-                  <span className="text-sm">{exp.date}</span>
+                <div className="flex justify-between items-baseline">
+                  <h3 className="font-semibold text-gray-800">{exp.jobTitle}</h3>
+                  <span className="text-xs font-medium ml-2" style={{ color: primaryColor }}>{exp.date}</span>
                 </div>
                 <p className="text-sm text-gray-600">{exp.company}</p>
                 {exp.descriptions.length > 0 && (
-                  <ul className="mt-2 list-disc pl-5 text-sm">
-                    {exp.descriptions.map((desc, i) => (
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {exp.descriptions.map((desc: string, i: number) => (
                       <li key={i}>{desc}</li>
                     ))}
                   </ul>
@@ -53,38 +84,30 @@ const ImpactCVPreview = ({ themeId }: { themeId: string }) => {
               </div>
             ))}
           </div>
-        </section>
-      )}
+        ) : null;
 
-      {/* Education */}
-      {educations.length > 0 && educations[0].school && (
-        <section className="mb-6">
-          <h2 className={theme.sectionTitleStyle}>Education</h2>
-          <div className={theme.sectionContentStyle}>
-            {educations.map((edu, idx) => (
-              <div key={idx} className="mb-3">
-                <div className="flex justify-between">
-                  <h3 className="font-semibold">{edu.degree}</h3>
-                  <span className="text-sm">{edu.date}</span>
-                </div>
+      case 'education':
+        return educations.length > 0 && educations[0].school ? (
+          <div className="space-y-3">
+            {educations.map((edu: any, idx: number) => (
+              <div key={idx}>
+                <h3 className="font-semibold text-gray-800">{edu.degree}</h3>
                 <p className="text-sm text-gray-600">{edu.school}</p>
+                <p className="text-xs font-medium" style={{ color: primaryColor }}>{edu.date}</p>
               </div>
             ))}
           </div>
-        </section>
-      )}
+        ) : null;
 
-      {/* Projects */}
-      {projects.length > 0 && projects[0].project && (
-        <section className="mb-6">
-          <h2 className={theme.sectionTitleStyle}>Projects</h2>
-          <div className={theme.sectionContentStyle}>
-            {projects.map((proj, idx) => (
-              <div key={idx} className="mb-3">
-                <h3 className="font-semibold">{proj.project}</h3>
+      case 'projects':
+        return projects.length > 0 && projects[0].project ? (
+          <div className="space-y-3">
+            {projects.map((proj: any, idx: number) => (
+              <div key={idx}>
+                <h3 className="font-semibold text-gray-800">{proj.project}</h3>
                 {proj.descriptions.length > 0 && (
-                  <ul className="mt-1 list-disc pl-5 text-sm">
-                    {proj.descriptions.map((desc, i) => (
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {proj.descriptions.map((desc: string, i: number) => (
                       <li key={i}>{desc}</li>
                     ))}
                   </ul>
@@ -92,33 +115,155 @@ const ImpactCVPreview = ({ themeId }: { themeId: string }) => {
               </div>
             ))}
           </div>
-        </section>
-      )}
+        ) : null;
 
-      {/* Skills */}
-      {skills.featuredSkills.some((s) => s.skill) && (
-        <section className="mb-6">
-          <h2 className={theme.sectionTitleStyle}>Skills</h2>
-          <div className={theme.sectionContentStyle}>
-            <div className="flex flex-wrap gap-2">
-              {skills.featuredSkills
-                .filter((s) => s.skill)
-                .map((skill, idx) => (
-                  <span key={idx} className="rounded bg-gray-200 px-2 py-1 text-xs">
-                    {skill.skill}
-                  </span>
-                ))}
-            </div>
-            {skills.descriptions.length > 0 && (
-              <ul className="mt-2 list-disc pl-5 text-sm">
-                {skills.descriptions.map((desc, i) => (
-                  <li key={i}>{desc}</li>
-                ))}
-              </ul>
-            )}
+      case 'skills':
+        return skills.featuredSkills.some((s: any) => s.skill) ? (
+          <div className="flex flex-wrap gap-2">
+            {skills.featuredSkills
+              .filter((s: any) => s.skill)
+              .map((skill: any, idx: number) => (
+                <span
+                  key={idx}
+                  className="rounded-full px-3 py-1 text-xs font-medium text-white shadow-sm"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {skill.skill}
+                </span>
+              ))}
           </div>
-        </section>
-      )}
+        ) : null;
+
+      case 'languages':
+        return languages?.length > 0 ? (
+          <ul className="space-y-1 text-sm">
+            {languages.map((lang: any, idx: number) => (
+              <li key={idx}>{lang.language} - {lang.fluency}</li>
+            ))}
+          </ul>
+        ) : null;
+
+      case 'profiles':
+        return profiles?.length > 0 ? (
+          <div className="space-y-1 text-sm">
+            {profiles.map((prof: any, idx: number) => (
+              <div key={idx}>
+                {prof.label}: {prof.url}
+              </div>
+            ))}
+          </div>
+        ) : null;
+
+      default:
+        return null;
+    }
+  };
+
+  // Render section title
+  const renderSectionTitle = (sectionKey: string) => {
+    const sectionConfig = sections[sectionKey];
+    if (sectionConfig?.showTitle === false) return null;
+
+    const titles: Record<string, string> = {
+      experience: 'Experience',
+      education: 'Education',
+      projects: 'Projects',
+      skills: 'Skills',
+      languages: 'Languages',
+      profiles: 'Profiles',
+      summary: 'Summary',
+      certifications: 'Certifications',
+      awards: 'Awards',
+      publications: 'Publications',
+    };
+
+    return (
+      <h2
+        className="mb-3 border-b pb-1 text-lg font-bold"
+        style={{ borderColor: `${primaryColor}40`, color: primaryColor }}
+      >
+        {titles[sectionKey] || sectionKey}
+      </h2>
+    );
+  };
+
+  // Two-column layout
+  if (layout.type === 'two-column') {
+    return (
+      <div className="h-full bg-white p-8">
+        {/* Header */}
+        <div
+          className={`mb-6 ${styles.headerAlign === 'center' ? 'text-center' : 'text-left'}`}
+          style={{ borderBottom: `3px solid ${primaryColor}`, paddingBottom: styles.sectionSpacing }}
+        >
+          <h1
+            className="font-bold uppercase tracking-wider"
+            style={{ fontSize: typography.headingSize + 6, color: primaryColor }}
+          >
+            {profile.name || 'Your Name'}
+          </h1>
+          {profile.summary && (
+            <p className="mt-2 text-sm font-medium text-gray-600">{profile.summary}</p>
+          )}
+          <div className={`mt-3 flex flex-wrap gap-4 text-xs text-gray-500 ${styles.headerAlign === 'center' ? 'justify-center' : ''}`}>
+            {profile.email && <span>✉ {profile.email}</span>}
+            {profile.phone && <span>☏ {profile.phone}</span>}
+            {profile.location && <span>⌂ {profile.location}</span>}
+            {profile.url && <span>🔗 {profile.url}</span>}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex gap-8">
+          {/* Main Column */}
+          <div className="flex-1 space-y-6">
+            {layout.mainSections.map((sectionType) => (
+              <section key={sectionType}>
+                {renderSectionTitle(sectionType)}
+                {renderSectionContent(sectionType)}
+              </section>
+            ))}
+          </div>
+
+          {/* Sidebar */}
+          <div
+            className="shrink-0 space-y-6"
+            style={{ width: `${layout.sidebarWidth}%` }}
+          >
+            {layout.sidebarSections.map((sectionType) => (
+              <section key={sectionType}>
+                {renderSectionTitle(sectionType)}
+                {renderSectionContent(sectionType)}
+              </section>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Single column layout
+  return (
+    <div className="h-full bg-white p-8">
+      {/* Header */}
+      <div className={`mb-8 ${styles.headerAlign === 'center' ? 'text-center' : 'text-left'}`}>
+        <h1 className="font-bold" style={{ fontSize: typography.headingSize + 10 }}>
+          {profile.name || 'Your Name'}
+        </h1>
+        {profile.summary && (
+          <p className="mt-2 text-sm text-gray-600">{profile.summary}</p>
+        )}
+      </div>
+
+      {/* Sections */}
+      <div className="space-y-6">
+        {[...layout.mainSections, ...layout.sidebarSections].map((sectionType) => (
+          <section key={sectionType}>
+            {renderSectionTitle(sectionType)}
+            {renderSectionContent(sectionType)}
+          </section>
+        ))}
+      </div>
     </div>
   );
 };
@@ -250,152 +395,25 @@ const LegacyPreview = () => {
   );
 };
 
-// Reactive-Resume style preview
-const ReactiveResumePreview = ({ templateId }: { templateId: string }) => {
+// Impact-CV style preview renderer
+const ImpactCVPreview = ({ themeId }: { themeId: string }) => {
   const resume = useAppSelector(selectResume);
-  const templateName = templateId.replace("reactive-", "");
-  const template = getTemplateById(templateId);
-  const color = (template && 'color' in template ? template.color : "#3b82f6") as string;
-  
-  const { profile, workExperiences, educations, projects, skills } = resume;
+  const template = useMemo(() => {
+    // Try to get from Impact-CV themes
+    return null; // Will be handled by default theme lookup
+  }, [themeId]);
 
-  return (
-    <div className="h-full bg-white p-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-col items-center border-b-2 pb-4 text-center" style={{ borderColor: color }}>
-        <h1 className="text-3xl font-bold uppercase tracking-wider" style={{ color }}>
-          {profile.name || "Your Name"}
-        </h1>
-        <p className="mt-1 text-sm font-medium text-gray-600">{profile.summary}</p>
-        
-        <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs text-gray-500">
-          {profile.email && <span className="flex items-center gap-1">✉ {profile.email}</span>}
-          {profile.phone && <span className="flex items-center gap-1">☏ {profile.phone}</span>}
-          {profile.location && <span className="flex items-center gap-1">⌂ {profile.location}</span>}
-          {profile.url && <span className="flex items-center gap-1">🔗 {profile.url}</span>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
-        {/* Left Column - Main Content */}
-        <div className="col-span-2 space-y-6">
-          {/* Work Experience */}
-          {workExperiences.length > 0 && workExperiences[0].company && (
-            <section>
-              <h2 className="mb-3 border-b pb-1 text-lg font-bold" style={{ borderColor: `${color}40`, color }}>
-                Experience
-              </h2>
-              <div className="space-y-4">
-                {workExperiences.map((exp, idx) => (
-                  <div key={idx}>
-                    <div className="flex items-baseline justify-between">
-                      <h3 className="font-semibold text-gray-800">{exp.jobTitle}</h3>
-                      <span className="text-xs font-medium" style={{ color }}>{exp.date}</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-600">{exp.company}</p>
-                    {exp.descriptions.length > 0 && (
-                      <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                        {exp.descriptions.map((desc, i) => (
-                          <li key={i}>{desc}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Projects */}
-          {projects.length > 0 && projects[0].project && (
-            <section>
-              <h2 className="mb-3 border-b pb-1 text-lg font-bold" style={{ borderColor: `${color}40`, color }}>
-                Projects
-              </h2>
-              <div className="space-y-4">
-                {projects.map((proj, idx) => (
-                  <div key={idx}>
-                    <div className="flex items-baseline justify-between">
-                      <h3 className="font-semibold text-gray-800">{proj.project}</h3>
-                      <span className="text-xs font-medium" style={{ color }}>{proj.date}</span>
-                    </div>
-                    {proj.descriptions.length > 0 && (
-                      <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                        {proj.descriptions.map((desc, i) => (
-                          <li key={i}>{desc}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* Right Column - Sidebar */}
-        <div className="col-span-1 space-y-6">
-          {/* Education */}
-          {educations.length > 0 && educations[0].school && (
-            <section>
-              <h2 className="mb-3 border-b pb-1 text-lg font-bold" style={{ borderColor: `${color}40`, color }}>
-                Education
-              </h2>
-              <div className="space-y-3">
-                {educations.map((edu, idx) => (
-                  <div key={idx}>
-                    <h3 className="font-semibold text-gray-800">{edu.degree}</h3>
-                    <p className="text-sm text-gray-600">{edu.school}</p>
-                    <p className="text-xs font-medium" style={{ color }}>{edu.date}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Skills */}
-          {skills.featuredSkills.some((s) => s.skill) && (
-            <section>
-              <h2 className="mb-3 border-b pb-1 text-lg font-bold" style={{ borderColor: `${color}40`, color }}>
-                Skills
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {skills.featuredSkills
-                  .filter((s) => s.skill)
-                  .map((skill, idx) => (
-                    <span 
-                      key={idx} 
-                      className="rounded-full px-3 py-1 text-xs font-medium text-white shadow-sm"
-                      style={{ backgroundColor: color }}
-                    >
-                      {skill.skill}
-                    </span>
-                  ))}
-              </div>
-              {skills.descriptions.length > 0 && (
-                <ul className="mt-3 list-disc pl-5 text-sm text-gray-600">
-                  {skills.descriptions.map((desc, i) => (
-                    <li key={i}>{desc}</li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <LegacyPreview />;
 };
 
 const CustomHTMLPreview = () => {
   const resume = useAppSelector(selectResume);
   const settings = useAppSelector(selectSettings);
-  
+
   // Very basic mustache/handlebars style interpolation
   const interpolate = (html: string, data: any) => {
     let result = html;
-    
-    // Replace loops: {{#array}} ... {{/array}}
+
     const loopRegex = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
     result = result.replace(loopRegex, (match, key, innerTemplate) => {
       if (Array.isArray(data[key])) {
@@ -411,7 +429,6 @@ const CustomHTMLPreview = () => {
       return '';
     });
 
-    // Replace basic variables: {{profile.name}}
     Object.keys(data).forEach((key) => {
       if (typeof data[key] === 'object' && !Array.isArray(data[key])) {
         Object.keys(data[key]).forEach((subKey) => {
@@ -420,7 +437,7 @@ const CustomHTMLPreview = () => {
         });
       }
     });
-    
+
     return result;
   };
 
@@ -429,39 +446,62 @@ const CustomHTMLPreview = () => {
   return (
     <div className="h-full bg-white relative">
       <style>{settings.customCSS}</style>
-      <div 
-        dangerouslySetInnerHTML={{ __html: parsedHTML }} 
-      />
+      <div dangerouslySetInnerHTML={{ __html: parsedHTML }} />
     </div>
   );
 };
 
+// Main TemplatePreview component
 export const TemplatePreview = () => {
   const settings = useAppSelector(selectSettings);
+  const resume = useAppSelector(selectResume);
   const { templateSettings } = settings;
   const { activeTemplate } = templateSettings;
 
-  const template = getTemplateById(activeTemplate);
+  const [backendTemplates, setBackendTemplates] = useState<TemplateConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch templates from backend on mount
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const response = await fetch(apiUrl('/api/templates'));
+        const data = await response.json();
+        if (data.success && data.data?.templates) {
+          setBackendTemplates(data.data.templates);
+        }
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTemplates();
+  }, []);
+
+  // Find template configuration
+  const templateConfig = useMemo(() => {
+    return backendTemplates.find(t => t.id === activeTemplate);
+  }, [backendTemplates, activeTemplate]);
 
   const renderPreview = () => {
-    if (activeTemplate === "custom-html") {
+    // Custom HTML template
+    if (activeTemplate === 'custom-html') {
       return <CustomHTMLPreview />;
     }
 
-    if (!template) {
-      return <LegacyPreview />;
+    // Check if we have a backend template config
+    if (templateConfig) {
+      return <ConfigBasedTemplate templateConfig={templateConfig} resume={resume} />;
     }
 
-    switch (template.source) {
-      case "impact-cv":
-        return <ImpactCVPreview themeId={activeTemplate} />;
-      case "legacy":
-        return <LegacyPreview />;
-      case "reactive-resume":
-        return <ReactiveResumePreview templateId={activeTemplate} />;
-      default:
-        return <LegacyPreview />;
+    // Impact-CV style
+    if (activeTemplate.startsWith('impactcv-')) {
+      return <ImpactCVPreview themeId={activeTemplate} />;
     }
+
+    // Legacy default
+    return <LegacyPreview />;
   };
 
   return (
@@ -473,7 +513,13 @@ export const TemplatePreview = () => {
       }}
     >
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {renderPreview()}
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-gray-500">Loading template...</div>
+          </div>
+        ) : (
+          renderPreview()
+        )}
       </div>
     </div>
   );

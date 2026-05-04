@@ -1,6 +1,8 @@
 import "./globals.css";
 import { TopNavBar } from "components/TopNavBar";
 import { Analytics } from "@vercel/analytics/react";
+import { AppProviders } from "components/AppProviders";
+import { AIAssistantClient } from "components/AIAssistantClient";
 
 export const metadata = {
   title: "ResumeMaker - Free Open-source Resume Builder and Parser",
@@ -14,11 +16,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body>
-        <TopNavBar />
-        {children}
-        <Analytics />
+        <AppProviders>
+          <TopNavBar />
+          {children}
+          <AIAssistantClient />
+          <Analytics />
+        </AppProviders>
       </body>
     </html>
   );

@@ -39,9 +39,7 @@ export const BaseForm = ({
   children: React.ReactNode;
   className?: string;
 }) => (
-  <section
-    className={`flex flex-col gap-3 rounded-md bg-white p-6 pt-4 shadow transition-opacity duration-200 ${className}`}
-  >
+  <section className={`flex flex-col gap-3 transition-opacity duration-200 resume-form-base ${className}`}>
     {children}
   </section>
 );
@@ -95,9 +93,10 @@ export const Form = ({
           <Icon className="h-6 w-6 text-gray-600" aria-hidden="true" />
           <input
             type="text"
-            className="block w-full border-b border-transparent text-lg font-semibold tracking-wide text-gray-900 outline-none hover:border-gray-300 hover:shadow-sm focus:border-gray-300 focus:shadow-sm"
+            className="block w-full resume-input text-lg font-semibold tracking-wide outline-none"
             value={heading}
             onChange={(e) => setHeading(e.target.value)}
+            placeholder="Section title"
           />
         </div>
         <div className="flex items-center gap-0.5">

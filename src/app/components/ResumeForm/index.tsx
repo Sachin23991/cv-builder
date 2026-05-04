@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
+import dynamic from "next/dynamic";
 import {
   useAppSelector,
   useSaveStateToLocalStorageOnChange,
@@ -7,16 +8,38 @@ import {
 } from "lib/redux/hooks";
 import { ShowForm, selectFormsOrder } from "lib/redux/settingsSlice";
 import { ProfileForm } from "components/ResumeForm/ProfileForm";
-import { WorkExperiencesForm } from "components/ResumeForm/WorkExperiencesForm";
-import { EducationsForm } from "components/ResumeForm/EducationsForm";
-import { ProjectsForm } from "components/ResumeForm/ProjectsForm";
-import { SkillsForm } from "components/ResumeForm/SkillsForm";
 import { ThemeForm } from "components/ResumeForm/ThemeForm";
-import { CustomForm } from "components/ResumeForm/CustomForm";
 import { FlexboxSpacer } from "components/FlexboxSpacer";
 import { cx } from "lib/cx";
 
-const formTypeToComponent: { [type in ShowForm]?: () => JSX.Element } = {
+// Lazy load form components
+const WorkExperiencesForm = lazy(() =>
+  import("components/ResumeForm/WorkExperiencesForm").then((mod) => ({
+    default: mod.WorkExperiencesForm,
+  }))
+);
+const EducationsForm = lazy(() =>
+  import("components/ResumeForm/EducationsForm").then((mod) => ({
+    default: mod.EducationsForm,
+  }))
+);
+const ProjectsForm = lazy(() =>
+  import("components/ResumeForm/ProjectsForm").then((mod) => ({
+    default: mod.ProjectsForm,
+  }))
+);
+const SkillsForm = lazy(() =>
+  import("components/ResumeForm/SkillsForm").then((mod) => ({
+    default: mod.SkillsForm,
+  }))
+);
+const CustomForm = lazy(() =>
+  import("components/ResumeForm/CustomForm").then((mod) => ({
+    default: mod.CustomForm,
+  }))
+);
+
+const formTypeToComponent: { [type in ShowForm]?: any } = {
   workExperiences: WorkExperiencesForm,
   educations: EducationsForm,
   projects: ProjectsForm,
@@ -45,7 +68,11 @@ export const ResumeForm = () => {
         {formsOrder.map((form) => {
           const Component = formTypeToComponent[form];
           if (!Component) return null;
-          return <Component key={form} />;
+          return (
+            <Suspense key={form} fallback={<div className="h-24" />}>
+              <Component />
+            </Suspense>
+          );
         })}
         <ThemeForm />
         <br />

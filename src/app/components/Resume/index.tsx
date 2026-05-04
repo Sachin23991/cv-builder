@@ -1,7 +1,9 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { ResumeIframeCSR } from "components/Resume/ResumeIFrame";
-import { ResumePDF } from "components/Resume/ResumePDF";
+const ResumePDF = dynamic(() => import("components/Resume/ResumePDF").then((mod) => mod.ResumePDF), { ssr: false });
+const TemplatePreview = dynamic(() => import("./TemplatePreview").then((mod) => mod.TemplatePreview), { ssr: false });
 import {
   ResumeControlBarCSR,
   ResumeControlBarBorder,
@@ -11,12 +13,7 @@ import { useAppSelector } from "lib/redux/hooks";
 import { selectResume } from "lib/redux/resumeSlice";
 import { selectSettings, selectTemplateSettings } from "lib/redux/settingsSlice";
 import { DEBUG_RESUME_PDF_FLAG } from "lib/constants";
-import {
-  useRegisterReactPDFFont,
-  useRegisterReactPDFHyphenationCallback,
-} from "components/fonts/hooks";
 import { NonEnglishFontsCSSLazyLoader } from "components/fonts/NonEnglishFontsCSSLoader";
-import { TemplatePreview } from "./TemplatePreview";
 import { getTemplateById } from "lib/templates";
 
 export const Resume = () => {
@@ -28,29 +25,20 @@ export const Resume = () => {
   const settings = useAppSelector(selectSettings);
   const templateSettings = useAppSelector(selectTemplateSettings);
   
+  // Check if we should use HTML preview instead of PDF
+  const activeTemplate = getTemplateById(templateSettings.activeTemplate);
+  const useHTMLPreview = activeTemplate && activeTemplate.source !== "legacy";
+
   useEffect(() => {
     if (!previewRef.current) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        // Only increase height beyond 1 page (1123px), never shrink below 1 page
         setContentHeight(Math.max(1123, entry.contentRect.height));
       }
     });
     observer.observe(previewRef.current);
     return () => observer.disconnect();
   }, []);
-
-  const document = useMemo(
-    () => <ResumePDF resume={resume} settings={settings} isPDF={true} />,
-    [resume, settings]
-  );
-
-  useRegisterReactPDFFont();
-  useRegisterReactPDFHyphenationCallback(settings.fontFamily);
-
-  // Check if we should use HTML preview instead of PDF
-  const activeTemplate = getTemplateById(templateSettings.activeTemplate);
-  const useHTMLPreview = activeTemplate && activeTemplate.source !== "legacy";
 
   return (
     <>
@@ -102,7 +90,6 @@ export const Resume = () => {
             scale={scale}
             setScale={setScale}
             documentSize={settings.documentSize}
-            document={document}
             fileName={resume.profile.name + " - Resume"}
           />
         </div>

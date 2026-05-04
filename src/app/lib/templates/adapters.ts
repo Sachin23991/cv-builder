@@ -1,7 +1,7 @@
 import type { Resume, TemplateSettings } from "lib/redux/types";
 
-export type TemplateParadigm = "config" | "component" | "pdf";
-export type TemplateSource = "impact-cv" | "reactive-resume" | "legacy";
+export type TemplateParadigm = "config" | "component" | "pdf" | "html";
+export type TemplateSource = "impact-cv" | "reactive-resume" | "legacy" | "custom-html" | "backend";
 export type TemplateCategory = "professional" | "creative" | "academic" | "modern" | "minimal";
 
 export interface TemplateAdapter {
@@ -12,9 +12,9 @@ export interface TemplateAdapter {
   paradigm: TemplateParadigm;
   preview?: string;
   description?: string;
-  render: (resume: Resume, settings: TemplateSettings) => JSX.Element;
+  render?: (resume: Resume, settings: TemplateSettings) => JSX.Element;
   exportPDF?: () => Promise<Blob>;
-  getDefaultSettings: () => Partial<TemplateSettings>;
+  getDefaultSettings?: () => any;
 }
 
 export interface ImpactCVThemeConfig {
@@ -32,4 +32,6 @@ export interface ImpactCVThemeConfig {
   imagePlacement?: "left" | "right" | "center" | "top";
   imageStyle?: string;
   preview?: string;
+  category?: TemplateCategory;
+  config?: unknown;
 }

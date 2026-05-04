@@ -33,7 +33,7 @@ export const AutoTypingResume = () => {
       for (let i = 0; i < CHARS_PER_INTERVAL - 1; i++) {
         next = resumeCharIterator.current.next();
       }
-      if (!next.done) {
+      if (!next.done && next.value) {
         setResume(next.value);
       } else {
         // Sometimes the iterator doesn't end on the last char,

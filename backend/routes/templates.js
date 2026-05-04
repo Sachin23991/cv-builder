@@ -1,174 +1,311 @@
 /**
- * routes/templates.js — Template management + dev-server orchestration
- * Manages all three sub-project templates and can start/stop their dev servers
+ * Template Routes
+ * Serves template configurations and renders templates to HTML/PDF
  */
-import { Router } from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
-const ROOT       = path.resolve(__dirname, '..');
+import { Router } from 'express';
+import {
+  templateList,
+  templatesByCategory,
+  getTemplateById,
+  getAllTemplateIds,
+  templateCount,
+} from '../templates/configurations.js';
+import {
+  renderTemplateToHTML,
+  renderTemplateToSSR,
+  renderTemplateToPDF,
+  createPreviewSession,
+  updatePreviewSession,
+  getPreviewSession,
+  deletePreviewSession,
+  listTemplates
+} from '../templates/renderers/index.js';
 
 const router = Router();
 
-// ─── Template registry ──────────────────────────────────────────
-const templates = {
-  'impact-cv': {
-    name: 'Impact CV',
-    type: 'vite',
-    path: path.join(ROOT, 'impact-cv'),
-    port: 3002,
-    description: 'Modern React CV builder — 20 themes, AI tailoring, PDF/HTML export',
-    themes: [
-      'basic','casual','professional','creative','modern','business',
-      'minimal','elegant','technical','vibrant','academic','corporate',
-      'artistic','classic','digital','futuristic','nordic','blueprint',
-      'gradient','retro',
-    ],
-    features: ['theme-selector','ai-tailor','pdf-export','html-export','json-import-export','photo-upload','section-config'],
-  },
-  'reactive-resume': {
-    name: 'Reactive Resume',
-    type: 'tanstack',
-    path: path.join(ROOT, 'reactive-resume'),
-    port: 3003,
-    description: 'Full-featured resume builder — AI integration, auth, printer service',
-    features: ['ai-multi-provider','auth','printer','storage','i18n','drag-drop','mcp'],
-  },
-  'hugo-theme-academic-cv': {
-    name: 'Academic CV',
-    type: 'hugo',
-    path: path.join(ROOT, 'hugo-theme-academic-cv'),
-    port: 3004,
-    description: 'Academic CV — publications, courses, events, blog',
-    features: ['publications','courses','events','blog','pagefind-search'],
-  },
-};
-
-// Running dev-server processes
-const devProcesses = new Map();
-
-// ──────────────────────────────────────────────
-// GET /api/templates — list all templates
-// ──────────────────────────────────────────────
+/**
+ * GET /api/templates
+ * List all available templates
+ */
 router.get('/', (_req, res) => {
-  const list = Object.entries(templates).map(([id, cfg]) => ({
-    id,
-    name: cfg.name,
-    type: cfg.type,
-    port: cfg.port,
-    description: cfg.description,
-    features: cfg.features,
-    themes: cfg.themes || [],
-    running: devProcesses.has(id),
-  }));
-  res.json({ success: true, data: list });
+  res.json({
+    success: true,
+    data: {
+      templates: templateList,
+      count: templateCount,
+      categories: Object.keys(templatesByCategory),
+      renderable: listTemplates(),
+    },
+  });
 });
 
-// ──────────────────────────────────────────────
-// GET /api/templates/:id — single template info
-// ──────────────────────────────────────────────
+/**
+ * GET /api/templates/category/:category
+ * Get templates by category
+ */
+router.get('/category/:category', (req, res) => {
+  const { category } = req.params;
+  const templates = templatesByCategory[category];
+
+  if (!templates) {
+    return res.status(404).json({
+      success: false,
+      error: 'Category not found',
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      category,
+      templates,
+      count: templates.length,
+    },
+  });
+});
+
+/**
+ * GET /api/templates/all-ids
+ * Get all template IDs (lightweight response)
+ */
+router.get('/ids/all', (_req, res) => {
+  res.json({
+    success: true,
+    data: getAllTemplateIds(),
+  });
+});
+
+/**
+ * GET /api/templates/:id
+ * Get specific template configuration
+ */
 router.get('/:id', (req, res) => {
-  const cfg = templates[req.params.id];
-  if (!cfg) return res.status(404).json({ success: false, error: 'Template not found' });
+  const template = getTemplateById(req.params.id);
+  if (!template) {
+    return res.status(404).json({
+      success: false,
+      error: 'Template not found',
+    });
+  }
   res.json({
     success: true,
-    data: { id: req.params.id, ...cfg, running: devProcesses.has(req.params.id) },
+    data: template,
   });
 });
 
-// ──────────────────────────────────────────────
-// POST /api/templates/:id/start — start dev server
-// ──────────────────────────────────────────────
-router.post('/:id/start', (req, res) => {
-  const id  = req.params.id;
-  const cfg = templates[id];
-  if (!cfg) return res.status(404).json({ success: false, error: 'Template not found' });
+/**
+ * POST /api/templates/:id/render/html
+ * Render template to HTML string
+ */
+router.post('/:id/render/html', (req, res) => {
+  const { id } = req.params;
+  const { resumeData, options } = req.body;
 
-  if (devProcesses.has(id)) {
-    return res.json({ success: true, message: `${cfg.name} already running`, port: cfg.port });
+  // Validate template exists
+  const template = getTemplateById(id);
+  if (!template) {
+    return res.status(404).json({
+      success: false,
+      error: 'Template not found',
+    });
   }
 
-  let command, args;
-  if (cfg.type === 'vite' || cfg.type === 'tanstack') {
-    command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    args = ['run', 'dev', '--', '--port', String(cfg.port), '--host', '0.0.0.0'];
-  } else if (cfg.type === 'hugo') {
-    command = 'hugo';
-    args = ['server', '--port', String(cfg.port), '--bind', '0.0.0.0'];
+  if (!resumeData) {
+    return res.status(400).json({
+      success: false,
+      error: 'resumeData is required',
+    });
   }
-
-  const proc = spawn(command, args, {
-    cwd: cfg.path,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  proc.stdout.on('data', (d) => console.log(`[${id}] ${d}`));
-  proc.stderr.on('data', (d) => console.error(`[${id}] ${d}`));
-  proc.on('close', (code) => {
-    console.log(`[${id}] exited (code ${code})`);
-    devProcesses.delete(id);
-  });
-
-  devProcesses.set(id, { process: proc, port: cfg.port });
-  res.json({
-    success: true,
-    message: `${cfg.name} starting on port ${cfg.port}`,
-    port: cfg.port,
-    url: `http://localhost:${cfg.port}`,
-  });
-});
-
-// ──────────────────────────────────────────────
-// POST /api/templates/:id/stop — stop dev server
-// ──────────────────────────────────────────────
-router.post('/:id/stop', (req, res) => {
-  const id = req.params.id;
-  const info = devProcesses.get(id);
-  if (!info) return res.status(400).json({ success: false, error: `${id} is not running` });
 
   try {
-    if (process.platform === 'win32') {
-      spawn('taskkill', ['/pid', String(info.process.pid), '/f', '/t']);
-    } else {
-      process.kill(-info.process.pid, 'SIGTERM');
-    }
-  } catch { /* ignore */ }
-
-  devProcesses.delete(id);
-  res.json({ success: true, message: `${templates[id].name} stopped` });
-});
-
-// ──────────────────────────────────────────────
-// GET /api/templates/status — all running servers
-// ──────────────────────────────────────────────
-router.get('/status/all', (_req, res) => {
-  const status = {};
-  for (const [id, info] of devProcesses) {
-    status[id] = { running: true, port: info.port, pid: info.process.pid };
+    const { html, css } = renderTemplateToHTML(id, resumeData, options);
+    res.json({
+      success: true,
+      data: { html, css },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
-  res.json({ success: true, data: status });
 });
 
-// ──────────────────────────────────────────────
-// POST /api/templates/stop-all
-// ──────────────────────────────────────────────
-router.post('/stop-all', (_req, res) => {
-  const stopped = [];
-  for (const [id, info] of devProcesses) {
-    try {
-      if (process.platform === 'win32') {
-        spawn('taskkill', ['/pid', String(info.process.pid), '/f', '/t']);
-      } else {
-        process.kill(-info.process.pid, 'SIGTERM');
-      }
-      stopped.push(id);
-    } catch { /* ignore */ }
+/**
+ * POST /api/templates/:id/render/ssr
+ * Render template using React SSR
+ */
+router.post('/:id/render/ssr', async (req, res) => {
+  const { id } = req.params;
+  const { resumeData, options } = req.body;
+
+  // Validate template exists
+  const template = getTemplateById(id);
+  if (!template) {
+    return res.status(404).json({
+      success: false,
+      error: 'Template not found',
+    });
   }
-  devProcesses.clear();
-  res.json({ success: true, stopped });
+
+  if (!resumeData) {
+    return res.status(400).json({
+      success: false,
+      error: 'resumeData is required',
+    });
+  }
+
+  try {
+    const result = await renderTemplateToSSR(id, resumeData, options);
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
-export { devProcesses };
+/**
+ * POST /api/templates/:id/render/pdf
+ * Render template to PDF binary
+ */
+router.post('/:id/render/pdf', async (req, res) => {
+  const { id } = req.params;
+  const { resumeData, options } = req.body;
+
+  // Validate template exists
+  const template = getTemplateById(id);
+  if (!template) {
+    return res.status(404).json({
+      success: false,
+      error: 'Template not found',
+    });
+  }
+
+  if (!resumeData) {
+    return res.status(400).json({
+      success: false,
+      error: 'resumeData is required',
+    });
+  }
+
+  try {
+    const pdfBuffer = await renderTemplateToPDF(id, resumeData, options);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${resumeData.basics?.name || 'resume'}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/templates/preview/start
+ * Start a new preview session
+ */
+router.post('/preview/start', (req, res) => {
+  const { templateId, initialData } = req.body;
+
+  if (!templateId) {
+    return res.status(400).json({
+      success: false,
+      error: 'templateId is required',
+    });
+  }
+
+  const template = getTemplateById(templateId);
+  if (!template) {
+    return res.status(404).json({
+      success: false,
+      error: 'Template not found',
+    });
+  }
+
+  try {
+    const { sessionId, html } = createPreviewSession(templateId, initialData || {});
+    res.json({
+      success: true,
+      data: { sessionId, html },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * PATCH /api/templates/preview/:sessionId
+ * Update preview session with new data
+ */
+router.patch('/preview/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const { resumeData } = req.body;
+
+  if (!resumeData) {
+    return res.status(400).json({
+      success: false,
+      error: 'resumeData is required',
+    });
+  }
+
+  const { html, error } = updatePreviewSession(sessionId, resumeData);
+
+  if (error) {
+    return res.status(404).json({
+      success: false,
+      error,
+    });
+  }
+
+  res.json({
+    success: true,
+    data: { html },
+  });
+});
+
+/**
+ * GET /api/templates/preview/:sessionId
+ * Get preview session info
+ */
+router.get('/preview/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const session = getPreviewSession(sessionId);
+
+  if (!session) {
+    return res.status(404).json({
+      success: false,
+      error: 'Session not found or expired',
+    });
+  }
+
+  res.json({
+    success: true,
+    data: session,
+  });
+});
+
+/**
+ * DELETE /api/templates/preview/:sessionId
+ * Delete a preview session
+ */
+router.delete('/preview/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const deleted = deletePreviewSession(sessionId);
+
+  res.json({
+    success: deleted,
+    data: { deleted },
+  });
+});
+
 export default router;

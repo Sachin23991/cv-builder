@@ -2,12 +2,14 @@ import {
   initialEducation,
   initialProfile,
   initialProject,
+  initialResumeState,
   initialWorkExperience,
 } from "lib/redux/resumeSlice";
 import type { Resume } from "lib/redux/types";
 import { deepClone } from "lib/deep-clone";
 
 export const END_HOME_RESUME: Resume = {
+  ...deepClone(initialResumeState),
   profile: {
     name: "John Doe",
     summary:
@@ -90,6 +92,7 @@ export const END_HOME_RESUME: Resume = {
 };
 
 export const START_HOME_RESUME: Resume = {
+  ...deepClone(initialResumeState),
   profile: deepClone(initialProfile),
   workExperiences: END_HOME_RESUME.workExperiences.map(() =>
     deepClone(initialWorkExperience)
