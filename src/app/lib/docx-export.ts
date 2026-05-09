@@ -67,14 +67,13 @@ export const generateDocx = async (resume: Resume): Promise<Blob> => {
       );
       children.push(
         new Paragraph({
-          text: exp.date,
-          italics: true,
+          children: [new TextRun({ text: exp.date, italics: true })],
           spacing: { after: 100 },
         })
       );
       
-      const descs = exp.descriptions.length === 1 && exp.descriptions[0].startsWith("<")
-        ? stripHtml(exp.descriptions[0]).split('\n').filter(Boolean)
+      const descs = exp.descriptions.length === 1 && exp.descriptions[0]?.startsWith("<")
+        ? stripHtml(exp.descriptions[0] || "").split('\n').filter(Boolean)
         : exp.descriptions;
         
       descs.forEach((desc) => {
@@ -116,8 +115,8 @@ export const generateDocx = async (resume: Resume): Promise<Blob> => {
           })
         );
       }
-      const descs = edu.descriptions.length === 1 && edu.descriptions[0].startsWith("<")
-        ? stripHtml(edu.descriptions[0]).split('\n').filter(Boolean)
+      const descs = edu.descriptions.length === 1 && edu.descriptions[0]?.startsWith("<")
+        ? stripHtml(edu.descriptions[0] || "").split('\n').filter(Boolean)
         : edu.descriptions;
 
       descs.forEach((desc) => {
@@ -158,8 +157,8 @@ export const generateDocx = async (resume: Resume): Promise<Blob> => {
           })
         );
       }
-      const descs = proj.descriptions.length === 1 && proj.descriptions[0].startsWith("<")
-        ? stripHtml(proj.descriptions[0]).split('\n').filter(Boolean)
+      const descs = proj.descriptions.length === 1 && proj.descriptions[0]?.startsWith("<")
+        ? stripHtml(proj.descriptions[0] || "").split('\n').filter(Boolean)
         : proj.descriptions;
 
       descs.forEach((desc) => {

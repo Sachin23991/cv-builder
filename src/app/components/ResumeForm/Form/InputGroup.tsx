@@ -90,7 +90,7 @@ export const BulletListTextarea = <T extends string>({
 }: InputProps<T, string[]> & { showBulletPoints?: boolean }) => {
   // Convert old string array format to HTML string if necessary
   const htmlValue = bulletListStrings.length > 0 
-    ? (bulletListStrings.length === 1 && bulletListStrings[0].startsWith("<") 
+    ? (bulletListStrings.length === 1 && bulletListStrings[0]?.startsWith("<") 
         ? bulletListStrings[0] 
         : `<ul>${bulletListStrings.map(s => `<li>${s}</li>`).join("")}</ul>`)
     : "";

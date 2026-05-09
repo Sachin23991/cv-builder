@@ -102,7 +102,7 @@ export const ResumePDFBulletList = ({
 }) => {
   const safeItems = (items || []).filter((i) => typeof i === "string" && i.trim() !== "");
 
-  if (safeItems.length === 1 && safeItems[0].startsWith("<")) {
+  if (safeItems.length === 1 && safeItems[0]?.startsWith("<")) {
     const Html = require("react-pdf-html").default;
     return (
       <View style={{ ...styles.flexCol, fontSize: 10 }}>

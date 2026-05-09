@@ -5,28 +5,27 @@
       "dom.iterable",
       "esnext"
     ],
-    "baseUrl": ".",
     "paths": {
       "home/*": [
-        "src/app/home/*"
+        "./src/app/home/*"
       ],
       "components/*": [
-        "src/app/components/*"
+        "./src/app/components/*"
       ],
       "lib/*": [
-        "src/app/lib/*"
+        "./src/app/lib/*"
       ],
       "globals-css": [
-        "src/app/globals-css"
+        "./src/app/globals-css"
       ],
       "resume-parser/*": [
-        "src/app/resume-parser/*"
+        "./src/app/resume-parser/*"
       ],
       "resume-import/*": [
-        "src/app/resume-import/*"
+        "./src/app/resume-import/*"
       ],
       "public/*": [
-        "public/*"
+        "./public/*"
       ]
     },
     "allowJs": true,
@@ -39,7 +38,7 @@
     "incremental": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
