@@ -18,46 +18,50 @@ export const ResumePDFSkills = ({
   themeColor: string;
   showBulletPoints: boolean;
 }) => {
-  const { descriptions, featuredSkills } = skills;
-  const featuredSkillsWithText = featuredSkills.filter((item) => item.skill);
-  const featuredSkillsPair = [
-    [featuredSkillsWithText[0], featuredSkillsWithText[3]],
-    [featuredSkillsWithText[1], featuredSkillsWithText[4]],
-    [featuredSkillsWithText[2], featuredSkillsWithText[5]],
-  ];
+  const { descriptions = [], featuredSkills = [] } = skills || {};
+  const featuredSkillsWithText = featuredSkills.filter((item) => item && item.skill);
+
+  // Pre-build featured skills into pairs of 3 columns × 2 rows
+  const col0 = [featuredSkillsWithText[0], featuredSkillsWithText[3]].filter(Boolean);
+  const col1 = [featuredSkillsWithText[1], featuredSkillsWithText[4]].filter(Boolean);
+  const col2 = [featuredSkillsWithText[2], featuredSkillsWithText[5]].filter(Boolean);
+  const cols = [col0, col1, col2].filter((c) => c.length > 0);
+
+  const featuredViews: React.ReactNode[] = [];
+  if (featuredSkillsWithText.length > 0) {
+    const colViews: React.ReactNode[] = cols.map((col, colIdx) => {
+      const skillViews: React.ReactNode[] = col.map((fs, rowIdx) => (
+        <ResumeFeaturedSkill
+          key={rowIdx}
+          skill={fs!.skill}
+          rating={fs!.rating}
+          themeColor={themeColor}
+          style={{ justifyContent: "flex-end" }}
+        />
+      ));
+      return (
+        <View key={colIdx} style={{ ...styles.flexCol }}>
+          {skillViews}
+        </View>
+      );
+    });
+
+    featuredViews.push(
+      <View
+        key="featured"
+        style={{ ...styles.flexRowBetween, marginTop: spacing["0.5"] }}
+      >
+        {colViews}
+      </View>
+    );
+  }
 
   return (
     <ResumePDFSection themeColor={themeColor} heading={heading}>
-      {featuredSkillsWithText.length > 0 && (
-        <View style={{ ...styles.flexRowBetween, marginTop: spacing["0.5"] }}>
-          {featuredSkillsPair.map((pair, idx) => (
-            <View
-              key={idx}
-              style={{
-                ...styles.flexCol,
-              }}
-            >
-              {pair.map((featuredSkill, idx) => {
-                if (!featuredSkill) return null;
-                return (
-                  <ResumeFeaturedSkill
-                    key={idx}
-                    skill={featuredSkill.skill}
-                    rating={featuredSkill.rating}
-                    themeColor={themeColor}
-                    style={{
-                      justifyContent: "flex-end",
-                    }}
-                  />
-                );
-              })}
-            </View>
-          ))}
-        </View>
-      )}
+      {featuredViews}
       <View style={{ ...styles.flexCol }}>
         <ResumePDFBulletList
-          items={descriptions}
+          items={descriptions || []}
           showBulletPoints={showBulletPoints}
         />
       </View>

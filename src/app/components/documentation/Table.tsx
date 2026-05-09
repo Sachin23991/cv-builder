@@ -13,7 +13,7 @@ export const Table = ({
   trClassNames?: string[];
   tdClassNames?: string[];
 }) => {
-  const tableHeader = table[0];
+  const tableHeader = table[0] ?? [];
   const tableBody = table.slice(1);
   return (
     <table

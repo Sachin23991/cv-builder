@@ -2,3 +2,5 @@ node_modules
 .next
 .vscode
 .git
+.env.local
+.env

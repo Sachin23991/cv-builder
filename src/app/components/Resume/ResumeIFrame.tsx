@@ -40,6 +40,33 @@ const getIframeInitialContent = (isA4: boolean) => {
     ${allFontFamiliesPreloadLinks}
     <style>
       ${allFontFamiliesFontFaces}
+      html, body {
+        background: #ffffff !important;
+        color: #171717 !important;
+      }
+      /* Nuclear option: force ALL elements to dark text */
+      * {
+        color: #171717 !important;
+        -webkit-text-fill-color: #171717 !important;
+      }
+      body, body * {
+        color: #171717 !important;
+        -webkit-text-fill-color: #171717 !important;
+        opacity: 1 !important;
+        filter: none !important;
+        mix-blend-mode: normal !important;
+        text-shadow: none !important;
+      }
+      a, a * {
+        color: #171717 !important;
+        -webkit-text-fill-color: #171717 !important;
+        text-decoration: none !important;
+      }
+      SVG, svg, SVG *, svg * {
+        opacity: 1 !important;
+        filter: none !important;
+        mix-blend-mode: normal !important;
+      }
     </style>
   </head>
   <body style='overflow: hidden; width: ${width}pt; margin: 0; padding: 0; -webkit-text-size-adjust:none;'>
@@ -81,9 +108,10 @@ const ResumeIframe = ({
 
   return (
     <div
+      className="mx-auto"
       style={{
-        maxWidth: `${width * scale}px`,
-        maxHeight: `${height * scale}px`,
+        width: `${width * scale}px`,
+        height: `${height * scale}px`,
       }}
     >
       {/* There is an outer div and an inner div here. The inner div sets the iframe width and uses transform scale to zoom in/out the resume iframe.
@@ -101,7 +129,7 @@ const ResumeIframe = ({
           style={{ width: "100%", height: "100%" }}
           initialContent={iframeInitialContent}
           // key is used to force component to re-mount when document size changes
-          key={isA4 ? "A4" : "LETTER"}
+          key={isA4 ? "A4-readable-preview-v2" : "LETTER-readable-preview-v2"}
         >
           {children}
         </Frame>

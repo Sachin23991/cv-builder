@@ -16,6 +16,7 @@ const computeFeatureScores = (
 
   for (let i = 0; i < textItems.length; i++) {
     const textItem = textItems[i];
+    if (!textItem) continue;
 
     for (const featureSet of featureSets) {
       const [hasFeature, score, returnMatchingText] = featureSet;
@@ -27,7 +28,7 @@ const computeFeatureScores = (
         }
 
         const textScore = textScores[i];
-        if (textItem.text === text) {
+        if (textScore && textItem.text === text) {
           textScore.score += score;
           if (returnMatchingText) {
             textScore.match = true;

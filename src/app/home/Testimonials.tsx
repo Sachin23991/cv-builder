@@ -6,8 +6,7 @@ import testimonialVivianSrc from "public/assets/testimonial-vivian.jpg";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTailwindBreakpoints } from "lib/hooks/useTailwindBreakpoints";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { gsap, ScrollTrigger } from "lib/gsap";
 
 gsap.registerPlugin(ScrollTrigger);
 

@@ -2,10 +2,14 @@
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./backend/templates/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      transitionProperty: {
+        'colors': 'color, background-color, border-color, text-decoration-color, fill, stroke',
+        'transform-shadow': 'transform, box-shadow',
+      }
+    },
   },
   plugins: [require("tailwind-scrollbar")],
 };

@@ -1,4 +1,5 @@
 import { BaseForm } from "components/ResumeForm/Form";
+import { openResumeAI } from "components/ResumeForm/Form";
 import { Input, Textarea } from "components/ResumeForm/Form/InputGroup";
 import { useAppDispatch, useAppSelector } from "lib/redux/hooks";
 import { changeProfile, selectProfile } from "lib/redux/resumeSlice";
@@ -15,6 +16,23 @@ export const ProfileForm = () => {
 
   return (
     <BaseForm>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Profile
+          </p>
+          <p className="text-sm font-semibold text-slate-700">
+            Personal details and objective
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => openResumeAI("summary")}
+          className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100"
+        >
+          Ask AI for objective
+        </button>
+      </div>
       <div className="grid grid-cols-6 gap-3">
         <Input
           label="Name"

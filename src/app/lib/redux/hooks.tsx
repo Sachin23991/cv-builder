@@ -2,9 +2,10 @@ import { useEffect } from "react";
 import {
   useDispatch,
   useSelector,
+  useStore,
   type TypedUseSelectorHook,
 } from "react-redux";
-import { store, type RootState, type AppDispatch } from "lib/redux/store";
+import type { RootState, AppDispatch } from "lib/redux/store";
 import {
   loadStateFromLocalStorage,
   saveStateToLocalStorage,
@@ -25,12 +26,13 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
  * Hook to save store to local storage on store change
  */
 export const useSaveStateToLocalStorageOnChange = () => {
+  const store = useStore<RootState>();
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
       saveStateToLocalStorage(store.getState());
     });
     return unsubscribe;
-  }, []);
+  }, [store]);
 };
 
 export const useSetInitialStore = () => {
@@ -55,5 +57,5 @@ export const useSetInitialStore = () => {
       ) as Settings;
       dispatch(setSettings(mergedSettingsState));
     }
-  }, []);
+  }, [dispatch]);
 };

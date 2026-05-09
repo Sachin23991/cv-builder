@@ -16,35 +16,53 @@ export const ResumePDFWorkExperience = ({
   workExperiences: ResumeWorkExperience[];
   themeColor: string;
 }) => {
+  const safeExperiences = (workExperiences || []).filter(Boolean);
+
+  const experienceViews: React.ReactNode[] = safeExperiences.map(
+    ({ company, jobTitle, date, descriptions, hideBullets }, idx) => {
+      const hideCompanyName =
+        idx > 0 && company === safeExperiences[idx - 1]?.company;
+
+      const companyViews: React.ReactNode[] = [];
+      if (!hideCompanyName) {
+        companyViews.push(
+          <ResumePDFText key="company" bold={true}>
+            {company || ""}
+          </ResumePDFText>
+        );
+      }
+
+      return (
+        <View key={idx} style={idx !== 0 ? { marginTop: spacing["2"] } : {}}>
+          {companyViews}
+          <View
+            style={{
+              ...styles.flexRowBetween,
+              marginTop: hideCompanyName ? "-" + spacing["1"] : spacing["1.5"],
+            }}
+          >
+            <ResumePDFText>{jobTitle || ""}</ResumePDFText>
+            <ResumePDFText>{date || ""}</ResumePDFText>
+          </View>
+          {(() => {
+            const safeDescriptions = (descriptions || []).filter(
+              (d) => typeof d === "string" && d.trim() !== ""
+            );
+            if (safeDescriptions.length === 0) return null;
+            return (
+              <View style={{ ...styles.flexCol, marginTop: spacing["1.5"] }}>
+                <ResumePDFBulletList items={safeDescriptions} showBulletPoints={!hideBullets} />
+              </View>
+            );
+          })()}
+        </View>
+      );
+    }
+  );
+
   return (
     <ResumePDFSection themeColor={themeColor} heading={heading}>
-      {workExperiences.map(({ company, jobTitle, date, descriptions }, idx) => {
-        // Hide company name if it is the same as the previous company
-        const hideCompanyName =
-          idx > 0 && company === workExperiences[idx - 1].company;
-
-        return (
-          <View key={idx} style={idx !== 0 ? { marginTop: spacing["2"] } : {}}>
-            {!hideCompanyName && (
-              <ResumePDFText bold={true}>{company}</ResumePDFText>
-            )}
-            <View
-              style={{
-                ...styles.flexRowBetween,
-                marginTop: hideCompanyName
-                  ? "-" + spacing["1"]
-                  : spacing["1.5"],
-              }}
-            >
-              <ResumePDFText>{jobTitle}</ResumePDFText>
-              <ResumePDFText>{date}</ResumePDFText>
-            </View>
-            <View style={{ ...styles.flexCol, marginTop: spacing["1.5"] }}>
-              <ResumePDFBulletList items={descriptions} />
-            </View>
-          </View>
-        );
-      })}
+      {experienceViews}
     </ResumePDFSection>
   );
 };

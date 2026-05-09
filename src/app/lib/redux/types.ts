@@ -21,6 +21,7 @@ export interface ResumeWorkExperience {
   location?: string;
   website?: string;
   current?: boolean;
+  hideBullets?: boolean;
 }
 
 export interface ResumeEducation {
@@ -34,6 +35,7 @@ export interface ResumeEducation {
   location?: string;
   website?: string;
   current?: boolean;
+  hideBullets?: boolean;
 }
 
 export interface ResumeProject {
@@ -43,6 +45,7 @@ export interface ResumeProject {
   descriptions: string[];
   website?: string;
   company?: string;
+  hideBullets?: boolean;
 }
 
 export interface FeaturedSkill {
@@ -130,36 +133,142 @@ export interface ResumeCustomSection {
   items: unknown[];
 }
 
+// ─── Theme Variant ─────────────────────────────────────────
+export type ThemeVariant =
+  | 'minimal' | 'modern' | 'classic' | 'creative'
+  | 'corporate' | 'executive' | 'academic'
+  | 'infographic' | 'portfolio-first';
+
+export type ColorMode = 'light' | 'dark' | 'auto';
+export type BackgroundType = 'solid' | 'gradient' | 'pattern';
+export type CardStyle = 'none' | 'boxed' | 'rounded' | 'ghost' | 'elevated';
+export type BorderStyle = 'none' | 'hairline' | 'thick' | 'dotted' | 'dashed';
+export type ShadowLevel = 'none' | 'soft' | 'medium' | 'heavy';
+export type AccentTreatment = 'none' | 'sidebar-bar' | 'header-bar' | 'corner-badge' | 'underline';
+export type SectionDivider = 'line' | 'double-line' | 'dots' | 'gradient' | 'none';
+export type BulletStyle = 'circle' | 'square' | 'dash' | 'arrow' | 'checkmark' | 'none';
+export type DateFormat = 'month-year' | 'mm-yyyy' | 'yyyy' | 'duration';
+export type DatePlacement = 'right' | 'inline' | 'below';
+export type PhotoShape = 'circle' | 'square' | 'rounded';
+export type SkillBarStyle = 'bar' | 'dots' | 'circle' | 'chips';
+export type IconStyle = 'outline' | 'filled' | 'duotone';
+export type HeaderStyle = 'centered' | 'left-aligned' | 'banner' | 'split';
+export type GridType = 'standard' | 'card-based' | 'timeline' | 'modular';
+
 // Template Settings for unified template system
 export interface TemplateSettings {
   activeTemplate: string;
+
+  // ─── Layout & Structure ─────────────────────────────────
   layout: {
     sidebarWidth: number;
     main: string[];
     sidebar: string[];
     fullWidth: boolean;
+    columns?: 1 | 2 | 3;
+    sidebarPosition?: 'left' | 'right';
+    headerStyle?: HeaderStyle;
+    gridType?: GridType;
+    sectionOrder?: string[];
   };
+
+  // ─── Visual / Theme ─────────────────────────────────────
   design: {
     colors: {
       primary: string;
       text: string;
       background: string;
+      secondary?: string;
+      accent?: string;
+      muted?: string;
+      link?: string;
+      sidebarBg?: string;
+      sidebarText?: string;
+      headerBg?: string;
+      headerText?: string;
     };
+    theme?: ThemeVariant;
+    colorMode?: ColorMode;
+    background?: {
+      type: BackgroundType;
+      gradient?: string;
+      pattern?: string;
+    };
+    cardStyle?: CardStyle;
+    borderStyle?: BorderStyle;
+    shadowLevel?: ShadowLevel;
+    accentTreatment?: AccentTreatment;
+    sectionDivider?: SectionDivider;
     level: {
       type: 'hidden' | 'circle' | 'square' | 'rectangle' | 'progress-bar' | 'icon';
       icon: string;
     };
   };
+
+  // ─── Typography ─────────────────────────────────────────
   typography: {
     body: { fontFamily: string; fontSize: number; lineHeight: number };
     heading: { fontFamily: string; fontSize: number; lineHeight: number };
+    name?: { fontFamily?: string; fontSize?: number; fontWeight?: number; textTransform?: string };
+    subheading?: { fontFamily?: string; fontSize?: number; fontWeight?: number };
+    small?: { fontSize?: number };
+    letterSpacing?: number;
+    fontFeatures?: {
+      smallCaps?: boolean;
+      ligatures?: boolean;
+      oldstyleFigures?: boolean;
+    };
   };
+
+  // ─── Page Settings ──────────────────────────────────────
   page: {
     format: 'a4' | 'letter' | 'free-form';
     marginX: number;
     marginY: number;
     hideIcons: boolean;
+    forceOnePage?: boolean;
+    showPageNumbers?: boolean;
+    showFooter?: boolean;
+    footerContent?: string;
   };
+
+  // ─── Content & Copy ─────────────────────────────────────
+  content?: {
+    bulletStyle?: BulletStyle;
+    dateFormat?: DateFormat;
+    datePlacement?: DatePlacement;
+    emphasisRules?: {
+      boldRole?: boolean;
+      italicOrg?: boolean;
+      highlightMetrics?: boolean;
+    };
+    showPhoto?: boolean;
+    photoShape?: PhotoShape;
+    photoSize?: number;
+    showSkillBars?: boolean;
+    skillBarStyle?: SkillBarStyle;
+    showIcons?: boolean;
+    iconStyle?: IconStyle;
+    sectionLabels?: Record<string, string>;
+  };
+
+  // ─── Print & PDF ────────────────────────────────────────
+  print?: {
+    optimized?: boolean;
+    grayscale?: boolean;
+    removeShadows?: boolean;
+    removeAnimations?: boolean;
+    embedFonts?: boolean;
+  };
+
+  // ─── Accessibility ──────────────────────────────────────
+  accessibility?: {
+    highContrast?: boolean;
+    largeText?: boolean;
+    reduceMotion?: boolean;
+  };
+
+  // ─── Custom CSS Override ────────────────────────────────
   css?: {
     enabled: boolean;
     value: string;

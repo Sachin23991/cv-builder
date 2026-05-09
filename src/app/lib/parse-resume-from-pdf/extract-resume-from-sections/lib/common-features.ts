@@ -17,19 +17,30 @@ export const hasLetterAndIsAllUpperCase = (item: TextItem) =>
 const hasYear = (item: TextItem) => /(?:19|20)\d{2}/.test(item.text);
 // prettier-ignore
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// prettier-ignore
+const MONTH_ABBREVIATIONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const hasMonth = (item: TextItem) =>
   MONTHS.some(
     (month) =>
       item.text.includes(month) || item.text.includes(month.slice(0, 4))
   );
+const hasMonthAbbr = (item: TextItem) =>
+  MONTH_ABBREVIATIONS.some((abbr) =>
+    new RegExp(`\\b${abbr}\\b`, "i").test(item.text)
+  );
 const SEASONS = ["Summer", "Fall", "Spring", "Winter"];
 const hasSeason = (item: TextItem) =>
   SEASONS.some((season) => item.text.includes(season));
-const hasPresent = (item: TextItem) => item.text.includes("Present");
+const hasPresent = (item: TextItem) =>
+  /\b(Present|Current|Now|Ongoing)\b/i.test(item.text);
+const hasDateRangeDash = (item: TextItem) =>
+  /\d\s*[-–—]\s*(\d|Present|Current|Now)/i.test(item.text);
 export const DATE_FEATURE_SETS: FeatureSet[] = [
-  [hasYear, 1],
-  [hasMonth, 1],
+  [hasYear, 2],
+  [hasMonth, 2],
+  [hasMonthAbbr, 2],
   [hasSeason, 1],
-  [hasPresent, 1],
+  [hasPresent, 2],
+  [hasDateRangeDash, 3],
   [hasComma, -1],
 ];

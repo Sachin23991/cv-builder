@@ -1,9 +1,14 @@
 /** @type {import('next').NextConfig} */
 const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  output: 'standalone',
   async rewrites() {
     return [
       {
@@ -12,13 +17,16 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config, { isServer }) => {
     if (isServer) {
-      // Canvas is not needed on server side for pdfjs
-      config.externals = [...(config.externals || []), /^canvas$/];
+      const existing = Array.isArray(config.externals) ? config.externals : [];
+      config.externals = [...existing, ({ request }, callback) => {
+        if (/^canvas$/.test(request)) return callback(null, 'commonjs canvas');
+        callback();
+      }];
     }
     return config;
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

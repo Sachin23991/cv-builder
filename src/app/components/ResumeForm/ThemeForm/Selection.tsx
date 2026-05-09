@@ -30,7 +30,9 @@ const Selection = ({
 
   return (
     <div
-      className="flex w-[105px] cursor-pointer items-center justify-center rounded-md border border-gray-300 py-1.5 shadow-sm hover:border-gray-400 hover:bg-gray-100"
+      className={`flex w-[105px] cursor-pointer items-center justify-center rounded-md border border-gray-300 py-1.5 shadow-sm hover:border-gray-400 hover:bg-gray-100 ${
+        isSelected ? "" : "text-gray-700"
+      }`}
       onClick={onClick}
       style={isSelected ? selectedStyle : style}
       onKeyDown={(e) => {

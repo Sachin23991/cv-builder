@@ -21,7 +21,63 @@ export const ResumePDFProfile = ({
   isPDF: boolean;
 }) => {
   const { name, email, phone, url, summary, location } = profile;
-  const iconProps = { email, phone, location, url };
+
+  // Build icon rows ahead of time — never return null inside react-pdf JSX
+  type IconEntry = { key: string; value: string; iconType: IconType; src: string; isLink: boolean };
+  const iconEntries: IconEntry[] = [];
+
+  const rawIconProps: [string, string][] = [
+    ["email", email],
+    ["phone", phone],
+    ["location", location],
+    ["url", url],
+  ];
+
+  for (const [key, value] of rawIconProps) {
+    if (!value) continue;
+    let iconType: IconType = key as IconType;
+    if (key === "url") {
+      if (value.includes("github")) iconType = "url_github";
+      else if (value.includes("linkedin")) iconType = "url_linkedin";
+    }
+    const isLink = ["email", "url", "phone"].includes(key);
+    let src = "";
+    if (isLink) {
+      if (key === "email") src = `mailto:${value}`;
+      else if (key === "phone") src = `tel:${value.replace(/[^\d+]/g, "")}`;
+      else src = value.startsWith("http") ? value : `https://${value}`;
+    }
+    iconEntries.push({ key, value, iconType, src, isLink });
+  }
+
+  const iconRows: React.ReactNode[] = iconEntries.map(
+    ({ key, value, iconType, src, isLink }) => (
+      <View
+        key={key}
+        style={{
+          ...styles.flexRow,
+          alignItems: "center",
+          gap: spacing["1"],
+        }}
+      >
+        <ResumePDFIcon type={iconType} isPDF={isPDF} />
+        {isLink ? (
+          <ResumePDFLink src={src} isPDF={isPDF}>
+            <ResumePDFText>{value}</ResumePDFText>
+          </ResumePDFLink>
+        ) : (
+          <ResumePDFText>{value}</ResumePDFText>
+        )}
+      </View>
+    )
+  );
+
+  const summaryViews: React.ReactNode[] = [];
+  if (summary) {
+    summaryViews.push(
+      <ResumePDFText key="summary">{summary}</ResumePDFText>
+    );
+  }
 
   return (
     <ResumePDFSection style={{ marginTop: spacing["4"] }}>
@@ -30,9 +86,9 @@ export const ResumePDFProfile = ({
         themeColor={themeColor}
         style={{ fontSize: "20pt" }}
       >
-        {name}
+        {name || ""}
       </ResumePDFText>
-      {summary && <ResumePDFText>{summary}</ResumePDFText>}
+      {summaryViews}
       <View
         style={{
           ...styles.flexRowBetween,
@@ -40,60 +96,7 @@ export const ResumePDFProfile = ({
           marginTop: spacing["0.5"],
         }}
       >
-        {Object.entries(iconProps).map(([key, value]) => {
-          if (!value) return null;
-
-          let iconType = key as IconType;
-          if (key === "url") {
-            if (value.includes("github")) {
-              iconType = "url_github";
-            } else if (value.includes("linkedin")) {
-              iconType = "url_linkedin";
-            }
-          }
-
-          const shouldUseLinkWrapper = ["email", "url", "phone"].includes(key);
-          const Wrapper = ({ children }: { children: React.ReactNode }) => {
-            if (!shouldUseLinkWrapper) return <>{children}</>;
-
-            let src = "";
-            switch (key) {
-              case "email": {
-                src = `mailto:${value}`;
-                break;
-              }
-              case "phone": {
-                src = `tel:${value.replace(/[^\d+]/g, "")}`; // Keep only + and digits
-                break;
-              }
-              default: {
-                src = value.startsWith("http") ? value : `https://${value}`;
-              }
-            }
-
-            return (
-              <ResumePDFLink src={src} isPDF={isPDF}>
-                {children}
-              </ResumePDFLink>
-            );
-          };
-
-          return (
-            <View
-              key={key}
-              style={{
-                ...styles.flexRow,
-                alignItems: "center",
-                gap: spacing["1"],
-              }}
-            >
-              <ResumePDFIcon type={iconType} isPDF={isPDF} />
-              <Wrapper>
-                <ResumePDFText>{value}</ResumePDFText>
-              </Wrapper>
-            </View>
-          );
-        })}
+        {iconRows}
       </View>
     </ResumePDFSection>
   );

@@ -415,7 +415,7 @@ const Step3SectionsTable = ({
   sections: ResumeSectionToLines;
 }) => {
   const table: React.ReactNode[][] = [["Lines", "Line Content"]];
-  const trClassNames = [];
+  const trClassNames: string[] = [];
   let lineCounter = 0;
   const BACKGROUND_COLORS = [
     "bg-red-50",
@@ -446,7 +446,7 @@ const Step3SectionsTable = ({
 
   for (let i = 0; i < sectionsEntries.length; i++) {
     const sectionBackgroundColor = BACKGROUND_COLORS[i % 6];
-    const [sectionTitle, lines] = sectionsEntries[i];
+    const [sectionTitle, lines] = sectionsEntries[i] as [string, Lines];
     table.push([
       sectionTitle === "profile" ? "" : lineCounter,
       sectionTitle === "profile" ? "PROFILE" : sectionTitle,
@@ -454,7 +454,7 @@ const Step3SectionsTable = ({
     trClassNames.push(`${sectionBackgroundColor} font-bold`);
     lineCounter += 1;
     for (let j = 0; j < lines.length; j++) {
-      table.push([lineCounter, <Line key={lineCounter} line={lines[j]} />]);
+      table.push([lineCounter, <Line key={lineCounter} line={lines[j] as any} />]);
       trClassNames.push(sectionBackgroundColor);
       lineCounter += 1;
     }

@@ -1,12 +1,14 @@
 "use client";
-import { Hero } from "components/Hero";
-import { Steps } from "home/Steps";
-import { Features } from "home/Features";
-import { Testimonials } from "home/Testimonials";
-import { QuestionsAndAnswers } from "home/QuestionsAndAnswers";
-import { HomeResumeDemo } from "home/HomeResumeDemo";
+import dynamic from "next/dynamic";
 import { RevealOnScroll } from "components/RevealOnScroll";
 import Link from "next/link";
+
+const Hero = dynamic(() => import("components/Hero").then(m => m.Hero), { ssr: false });
+const Steps = dynamic(() => import("home/Steps").then(m => m.Steps), { ssr: false });
+const Features = dynamic(() => import("home/Features").then(m => m.Features), { ssr: false });
+const Testimonials = dynamic(() => import("home/Testimonials").then(m => m.Testimonials), { ssr: false });
+const QuestionsAndAnswers = dynamic(() => import("home/QuestionsAndAnswers").then(m => m.QuestionsAndAnswers), { ssr: false });
+const HomeResumeDemo = dynamic(() => import("home/HomeResumeDemo").then(m => m.HomeResumeDemo), { ssr: false });
 
 export default function Home() {
   return (
@@ -16,8 +18,8 @@ export default function Home() {
 
       {/* ═══════════════  LIVE RESUME AUTO-TYPING DEMO  ═══════════════ */}
       <RevealOnScroll className="mx-auto max-w-screen-2xl px-8 lg:px-12" delay={0.05}>
-        <section className="lg:flex lg:h-[825px] lg:justify-center">
-          <div className="mx-auto max-w-xl pt-8 text-center lg:mx-0 lg:grow lg:pt-32 lg:text-left">
+        <section className="lg:flex lg:justify-center">
+          <div className="mx-auto max-w-xl pt-8 text-center lg:mx-0 lg:grow lg:pt-16 lg:text-left">
             <h2 className="text-primary pb-2 text-3xl font-bold lg:text-4xl">
               Watch it build
               <br />

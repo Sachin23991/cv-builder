@@ -15,7 +15,7 @@ export const ProjectsForm = () => {
 
   return (
     <Form form="projects" addButtonText="Add Project">
-      {projects.map(({ project, date, descriptions }, idx) => {
+      {projects.map(({ project, date, descriptions, hideBullets }, idx) => {
         const handleProjectChange = (
           ...[
             field,
@@ -53,12 +53,28 @@ export const ProjectsForm = () => {
               onChange={handleProjectChange}
               labelClassName="col-span-2"
             />
+            
+            <div className="col-span-full flex items-center justify-between mt-2 mb-[-8px]">
+              <label className="text-sm font-semibold text-gray-700">Description</label>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Use Bullets</span>
+                <button
+                  type="button"
+                  onClick={() => handleProjectChange("hideBullets" as keyof ResumeProject, !hideBullets as any)}
+                  className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${!hideBullets ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${!hideBullets ? 'translate-x-4' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+
             <BulletListTextarea
               name="descriptions"
-              label="Description"
-              placeholder="Bullet points"
+              label=""
+              placeholder="Description"
               value={descriptions}
               onChange={handleProjectChange}
+              showBulletPoints={!hideBullets}
               labelClassName="col-span-full"
             />
           </FormSection>

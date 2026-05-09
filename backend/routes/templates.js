@@ -28,15 +28,26 @@ const router = Router();
  * GET /api/templates
  * List all available templates
  */
-router.get('/', (_req, res) => {
+router.get('/', (req, res) => {
+  const data = {
+    templates: templateList,
+    count: templateCount,
+    categories: Object.keys(templatesByCategory),
+    renderable: listTemplates(),
+  };
+
+  const etag = `"templates-${templateCount}-v1"`;
+
+  res.set('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
+  res.set('ETag', etag);
+
+  if (req.headers['if-none-match'] === etag) {
+    return res.status(304).end();
+  }
+
   res.json({
     success: true,
-    data: {
-      templates: templateList,
-      count: templateCount,
-      categories: Object.keys(templatesByCategory),
-      renderable: listTemplates(),
-    },
+    data,
   });
 });
 

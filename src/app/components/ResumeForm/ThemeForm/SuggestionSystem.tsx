@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import { suggestTemplates, getQuickSuggestions, type SuggestionCriteria } from "lib/templates";
+import { changeActiveTemplate } from "lib/redux/settingsSlice";
 import { useTemplateStore } from "lib/stores/templateStore";
 import { SparklesIcon, LightBulbIcon } from "@heroicons/react/24/outline";
+import { useDispatch } from "react-redux";
 
 const experienceLevels = [
   { value: "entry", label: "Entry Level (0-2 years)" },
@@ -20,6 +22,7 @@ const designPreferences = [
 
 export const SuggestionSystem = () => {
   const { setActiveTemplate, setTemplatePanelOpen } = useTemplateStore();
+  const dispatch = useDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
   const [suggestions, setSuggestions] = useState<ReturnType<typeof getQuickSuggestions>>([]);
   const [answers, setAnswers] = useState<{
@@ -48,6 +51,7 @@ export const SuggestionSystem = () => {
 
   const handleSelectTemplate = (templateId: string) => {
     setActiveTemplate(templateId);
+    dispatch(changeActiveTemplate(templateId));
     setTemplatePanelOpen(false);
   };
 

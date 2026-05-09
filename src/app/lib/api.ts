@@ -8,6 +8,17 @@ export const apiUrl = (path: string) => {
   return `${API_BASE_URL}${normalizedPath}`;
 };
 
+// Generate or retrieve persistent client ID
+function getClientId(): string {
+  if (typeof window === "undefined") return "server-ssr";
+  let clientId = localStorage.getItem("open-resume-client-id");
+  if (!clientId) {
+    clientId = crypto.randomUUID();
+    localStorage.setItem("open-resume-client-id", clientId);
+  }
+  return clientId;
+}
+
 // Helper for API calls
 export async function fetchAPI<T>(
   endpoint: string,
@@ -18,6 +29,7 @@ export async function fetchAPI<T>(
     ...options,
     headers: {
       "Content-Type": "application/json",
+      "x-client-id": getClientId(),
       ...options?.headers,
     },
   });

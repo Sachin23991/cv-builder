@@ -104,19 +104,44 @@ export const initialSettings: Settings = {
     custom: true,
   },
   templateSettings: {
-    activeTemplate: "legacy-default",
+    activeTemplate: "modern-html",
     layout: {
       sidebarWidth: 30,
       main: ["summary", "experience", "education", "projects", "skills"],
       sidebar: ["profiles"],
       fullWidth: false,
+      columns: 1 as const,
+      sidebarPosition: "left" as const,
+      headerStyle: "left-aligned" as const,
+      gridType: "standard" as const,
+      sectionOrder: ["summary", "experience", "education", "projects", "skills", "languages", "certifications", "awards"],
     },
     design: {
       colors: {
         primary: "#38bdf8",
         text: "#171717",
         background: "#ffffff",
+        secondary: "#0f766e",
+        accent: "#6366f1",
+        muted: "#64748b",
+        link: "#0ea5e9",
+        sidebarBg: "#0f172a",
+        sidebarText: "#f8fafc",
+        headerBg: "#ffffff",
+        headerText: "#0f172a",
       },
+      theme: "modern" as const,
+      colorMode: "light" as const,
+      background: {
+        type: "solid" as const,
+        gradient: "",
+        pattern: "",
+      },
+      cardStyle: "none" as const,
+      borderStyle: "hairline" as const,
+      shadowLevel: "none" as const,
+      accentTreatment: "underline" as const,
+      sectionDivider: "line" as const,
       level: {
         type: "circle" as const,
         icon: "none",
@@ -125,12 +150,55 @@ export const initialSettings: Settings = {
     typography: {
       body: { fontFamily: "Roboto", fontSize: 11, lineHeight: 1.5 },
       heading: { fontFamily: "Roboto", fontSize: 14, lineHeight: 1.3 },
+      name: { fontFamily: "Roboto", fontSize: 28, fontWeight: 700, textTransform: "none" },
+      subheading: { fontFamily: "Roboto", fontSize: 12, fontWeight: 600 },
+      small: { fontSize: 9 },
+      letterSpacing: 0,
+      fontFeatures: {
+        smallCaps: false,
+        ligatures: true,
+        oldstyleFigures: false,
+      },
     },
     page: {
       format: "letter" as const,
       marginX: 20,
       marginY: 20,
       hideIcons: false,
+      forceOnePage: false,
+      showPageNumbers: false,
+      showFooter: false,
+      footerContent: "",
+    },
+    content: {
+      bulletStyle: "circle" as const,
+      dateFormat: "month-year" as const,
+      datePlacement: "right" as const,
+      emphasisRules: {
+        boldRole: true,
+        italicOrg: false,
+        highlightMetrics: false,
+      },
+      showPhoto: false,
+      photoShape: "circle" as const,
+      photoSize: 80,
+      showSkillBars: true,
+      skillBarStyle: "chips" as const,
+      showIcons: true,
+      iconStyle: "outline" as const,
+      sectionLabels: {},
+    },
+    print: {
+      optimized: false,
+      grayscale: false,
+      removeShadows: true,
+      removeAnimations: true,
+      embedFonts: true,
+    },
+    accessibility: {
+      highContrast: false,
+      largeText: false,
+      reduceMotion: false,
     },
   },
   customHTML: `<div class="resume-container">\n  <h1>{{profile.name}}</h1>\n  <p>{{profile.summary}}</p>\n  \n  <h2>Experience</h2>\n  {{#workExperiences}}\n    <div class="exp">\n      <h3>{{jobTitle}} at {{company}}</h3>\n      <p>{{date}}</p>\n    </div>\n  {{/workExperiences}}\n</div>`,
@@ -171,8 +239,8 @@ export const settingsSlice = createSlice({
       const pos = draft.formsOrder.indexOf(form);
       const newPos = type === "up" ? pos - 1 : pos + 1;
       const swapFormOrder = (idx1: number, idx2: number) => {
-        const temp = draft.formsOrder[idx1];
-        draft.formsOrder[idx1] = draft.formsOrder[idx2];
+        const temp = draft.formsOrder[idx1]!;
+        draft.formsOrder[idx1] = draft.formsOrder[idx2]!;
         draft.formsOrder[idx2] = temp;
       };
       if (newPos >= 0 && newPos <= lastIdx) {
@@ -210,6 +278,24 @@ export const settingsSlice = createSlice({
     updatePage: (draft, action: PayloadAction<Partial<TemplateSettings['page']>>) => {
       Object.assign(draft.templateSettings.page, action.payload);
     },
+    updateContent: (draft, action: PayloadAction<Partial<NonNullable<TemplateSettings['content']>>>) => {
+      if (!draft.templateSettings.content) {
+        draft.templateSettings.content = {} as NonNullable<TemplateSettings['content']>;
+      }
+      Object.assign(draft.templateSettings.content, action.payload);
+    },
+    updatePrint: (draft, action: PayloadAction<Partial<NonNullable<TemplateSettings['print']>>>) => {
+      if (!draft.templateSettings.print) {
+        draft.templateSettings.print = {} as NonNullable<TemplateSettings['print']>;
+      }
+      Object.assign(draft.templateSettings.print, action.payload);
+    },
+    updateAccessibility: (draft, action: PayloadAction<Partial<NonNullable<TemplateSettings['accessibility']>>>) => {
+      if (!draft.templateSettings.accessibility) {
+        draft.templateSettings.accessibility = {} as NonNullable<TemplateSettings['accessibility']>;
+      }
+      Object.assign(draft.templateSettings.accessibility, action.payload);
+    },
   },
 });
 
@@ -226,6 +312,9 @@ export const {
   updateDesign,
   updateTypography,
   updatePage,
+  updateContent,
+  updatePrint,
+  updateAccessibility,
 } = settingsSlice.actions;
 
 export const selectSettings = (state: RootState) => state.settings;
@@ -252,5 +341,9 @@ export const selectShowBulletPoints =
 
 export const selectTemplateSettings = (state: RootState) => state.settings.templateSettings;
 export const selectActiveTemplate = (state: RootState) => state.settings.templateSettings.activeTemplate;
+export const selectContentSettings = (state: RootState) => state.settings.templateSettings.content;
+export const selectPrintSettings = (state: RootState) => state.settings.templateSettings.print;
+export const selectAccessibilitySettings = (state: RootState) => state.settings.templateSettings.accessibility;
+export const selectDesignColors = (state: RootState) => state.settings.templateSettings.design.colors;
 
 export default settingsSlice.reducer;

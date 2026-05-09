@@ -1,5 +1,6 @@
 /**
  * models/Resume.js — Mongoose schema for resumes/CVs
+ * Fix #21: Compound indexes for userId+updatedAt, unique slug, template filter
  * Covers ALL data structures from Impact CV, Reactive Resume, and Academic CV
  */
 import mongoose from 'mongoose';
@@ -81,8 +82,8 @@ const CustomSectionSchema = new Schema({
 // ─── Main Resume document ────────────────────────────────────────
 const ResumeSchema = new Schema({
   // Owner / auth
-  userId:    { type: String, index: true },
-  
+  userId:    { type: String, required: false }, // required once all clients send auth tokens
+
   // Which template this resume uses
   template:  {
     type: String,
@@ -130,7 +131,17 @@ const ResumeSchema = new Schema({
 
 }, { timestamps: true });
 
-// Text index for search
+// ─── Fix #21 — Indexes for query performance ──────────────────────
+// List by user, newest first (primary query pattern)
+ResumeSchema.index({ userId: 1, updatedAt: -1 });
+
+// Public share links — unique slug lookups
+ResumeSchema.index({ slug: 1 }, { unique: true, sparse: true });
+
+// Filter by template
+ResumeSchema.index({ template: 1 });
+
+// Full-text search on title and author name
 ResumeSchema.index({ title: 'text', 'basicInfo.name': 'text' });
 
 export const Resume = model('Resume', ResumeSchema);

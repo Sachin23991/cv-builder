@@ -19,7 +19,7 @@ export const WorkExperiencesForm = () => {
 
   return (
     <Form form="workExperiences" addButtonText="Add Job">
-      {workExperiences.map(({ company, jobTitle, date, descriptions }, idx) => {
+      {workExperiences.map(({ company, jobTitle, date, descriptions, hideBullets }, idx) => {
         const handleWorkExperienceChange = (
           ...[
             field,
@@ -68,13 +68,29 @@ export const WorkExperiencesForm = () => {
               value={date}
               onChange={handleWorkExperienceChange}
             />
+            
+            <div className="col-span-full flex items-center justify-between mt-2 mb-[-8px]">
+              <label className="text-sm font-semibold text-gray-700">Description</label>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Use Bullets</span>
+                <button
+                  type="button"
+                  onClick={() => handleWorkExperienceChange("hideBullets" as keyof ResumeWorkExperience, !hideBullets as any)}
+                  className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${!hideBullets ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${!hideBullets ? 'translate-x-4' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+
             <BulletListTextarea
-              label="Description"
+              label=""
               labelClassName="col-span-full"
               name="descriptions"
-              placeholder="Bullet points"
+              placeholder="Description"
               value={descriptions}
               onChange={handleWorkExperienceChange}
+              showBulletPoints={!hideBullets}
             />
           </FormSection>
         );

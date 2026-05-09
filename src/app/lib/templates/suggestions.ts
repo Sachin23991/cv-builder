@@ -1,5 +1,5 @@
 import type { TemplateAdapter } from "./adapters";
-import { templateRegistry, templatesByCategory } from "./registry";
+import { templateRegistry } from "./registry";
 
 export interface SuggestionCriteria {
   jobTitle?: string;
@@ -10,116 +10,23 @@ export interface SuggestionCriteria {
   colorPreference?: string;
 }
 
-// Keywords that map to categories
-const industryKeywords: Record<string, string[]> = {
-  tech: ["engineer", "developer", "software", "data", "analyst", "IT", "devops", "architect"],
-  creative: ["designer", "artist", "creative", "writer", "content", "marketing", "brand"],
-  finance: ["accountant", "financial", "banking", "investment", "economist", "finance"],
-  medical: ["doctor", "nurse", "healthcare", "medical", "pharma", "biotech"],
-  academic: ["professor", "researcher", "phd", "academic", "scientist", "teacher"],
-  legal: ["lawyer", "attorney", "legal", "counsel", "compliance"],
-  business: ["manager", "director", "executive", "CEO", "COO", "CTO", "business", "consultant"],
-};
+/**
+ * With only 2 template engines (modern-html, custom-html),
+ * suggestions now focus on recommending presets rather than templates.
+ * This is a simplified version that still satisfies the exported API.
+ */
 
-const jobTitleKeywords: Record<string, string[]> = {
-  "entry": ["junior", "intern", "associate", "entry", "starter", "beginner"],
-  "mid": ["senior", "lead", "specialist", "analyst", "consultant"],
-  "senior": ["senior", "principal", "staff", "head", "director", "VP"],
-  "executive": ["VP", "Vice President", "Director", "C-level", "CEO", "COO", "CTO", "CFO"],
-};
-
-// ATS-friendly templates (simple, single-column, clean)
-const atsFriendlyTemplates = [
-  "impactcv-basic",
-  "impactcv-minimal",
-  "impactcv-nordic",
-  "impactcv-professional",
-  "impactcv-technical",
-];
-
-// Score a template based on criteria
-const scoreTemplate = (template: TemplateAdapter, criteria: SuggestionCriteria): number => {
-  let score = 0;
-
-  // Industry matching
-  if (criteria.industry) {
-    const industryKey = Object.entries(industryKeywords).find(([, keywords]) =>
-      keywords.some((k) => criteria.industry?.toLowerCase().includes(k))
-    )?.[0];
-
-    if (industryKey === "tech" && template.category === "professional") score += 3;
-    if (industryKey === "creative" && template.category === "creative") score += 3;
-    if (industryKey === "academic" && (template.category === "academic" || template.id.includes("academic"))) score += 4;
-    if (industryKey === "finance" && template.category === "professional") score += 3;
-  }
-
-  // Experience level matching
-  if (criteria.experienceLevel) {
-    const level = criteria.experienceLevel;
-
-    if (level === "entry" && (template.category === "minimal" || template.id.includes("basic"))) {
-      score += 3;
-    }
-    if (level === "senior" || level === "executive") {
-      if (template.category === "professional" || template.source === "legacy") {
-        score += 3;
-      }
-    }
-    if (level === "mid" && (template.category === "professional" || template.category === "modern")) {
-      score += 2;
-    }
-  }
-
-  // Design preference matching
-  if (criteria.designPreference) {
-    if (criteria.designPreference === template.category) {
-      score += 4;
-    }
-  }
-
-  // ATS compatibility
-  if (criteria.atsCompatibility && atsFriendlyTemplates.includes(template.id)) {
-    score += 5;
-  }
-
-  // Boost professional templates for most job applications
-  if (template.category === "professional") {
-    score += 1;
-  }
-
-  return score;
-};
-
-// Main suggestion function
+// Main suggestion function — returns the modern-html template for most cases
 export const suggestTemplates = (
-  criteria: SuggestionCriteria,
-  limit: number = 5
+  _criteria: SuggestionCriteria,
+  limit: number = 2
 ): TemplateAdapter[] => {
-  const scored = templateRegistry.map((template) => ({
-    template,
-    score: scoreTemplate(template, criteria),
-  }));
-
-  // Sort by score descending
-  scored.sort((a, b) => b.score - a.score);
-
-  // Return top N templates with positive scores
-  return scored
-    .filter((s) => s.score > 0)
-    .slice(0, limit)
-    .map((s) => s.template);
+  return templateRegistry.slice(0, limit);
 };
 
-// Get suggestions based on common scenarios
+// Quick suggestions — just return available templates
 export const getQuickSuggestions = (): TemplateAdapter[] => {
-  return [
-    // Always good options for different scenarios
-    templateRegistry.find((t) => t.id === "impactcv-professional")!,
-    templateRegistry.find((t) => t.id === "impactcv-modern")!,
-    templateRegistry.find((t) => t.id === "impactcv-minimal")!,
-    templateRegistry.find((t) => t.id === "impactcv-technical")!,
-    templateRegistry.find((t) => t.id === "reactive-onyx")!,
-  ].filter(Boolean);
+  return templateRegistry.filter(Boolean);
 };
 
 // Question-based suggestions
@@ -129,23 +36,10 @@ export const getSuggestionsFromAnswers = (answers: {
   style?: string;
   ats?: boolean;
 }): TemplateAdapter[] => {
-  const criteria: SuggestionCriteria = {};
-
-  if (answers.role) {
-    criteria.industry = answers.role;
+  // For custom HTML users, suggest custom-html
+  if (answers.style === "creative") {
+    return templateRegistry.filter((t) => t.id === "custom-html");
   }
-
-  if (answers.experience) {
-    criteria.experienceLevel = answers.experience as SuggestionCriteria["experienceLevel"];
-  }
-
-  if (answers.style) {
-    criteria.designPreference = answers.style as SuggestionCriteria["designPreference"];
-  }
-
-  if (answers.ats) {
-    criteria.atsCompatibility = true;
-  }
-
-  return suggestTemplates(criteria);
+  // Default: modern-html
+  return templateRegistry.filter((t) => t.id === "modern-html");
 };

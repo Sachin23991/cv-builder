@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { gsap, ScrollTrigger } from "lib/gsap";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -75,7 +74,7 @@ export const Steps = () => {
               key={idx}
               className={`step-card relative flex flex-col lg:flex-row lg:items-start ${idx % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"}`}
             >
-              <div className="step-number-hero absolute left-0 top-0 hidden text-[8rem] font-bold text-[rgba(0,0,0,0.04)] lg:block">
+              <div className="step-number-hero absolute left-0 top-0 hidden text-[8rem] font-bold text-slate-900 lg:block">
                 {idx + 1}
               </div>
               <div className="step-marker lg:mx-8 lg:order-1">

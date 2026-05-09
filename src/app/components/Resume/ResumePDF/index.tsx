@@ -9,7 +9,6 @@ import { ResumePDFCustom } from "components/Resume/ResumePDF/ResumePDFCustom";
 import { DEFAULT_FONT_COLOR } from "lib/redux/settingsSlice";
 import type { Settings, ShowForm } from "lib/redux/settingsSlice";
 import type { Resume } from "lib/redux/types";
-import { SuppressResumePDFErrorMessage } from "components/Resume/ResumePDF/common/SuppressResumePDFErrorMessage";
 
 /**
  * Note: ResumePDF is supposed to be rendered inside PDFViewer. However,
@@ -49,7 +48,8 @@ export const ResumePDF = ({
   } = settings;
   const themeColor = settings.themeColor || DEFAULT_FONT_COLOR;
 
-  const formTypeToComponent: { [type in ShowForm]?: () => JSX.Element } = {
+  // Pre-build form sections as an array to avoid any inline conditional rendering
+  const sectionComponents: { [type in ShowForm]?: () => React.ReactElement } = {
     workExperiences: () => (
       <ResumePDFWorkExperience
         heading={formToHeading["workExperiences"]}
@@ -90,49 +90,56 @@ export const ResumePDF = ({
     ),
   };
 
-  const showFormsOrder = formsOrder.filter((form) => formToShow[form] && form in formTypeToComponent);
+  // Pre-build section elements as a plain array before rendering
+  const sectionElements: React.ReactElement[] = [];
+  for (const form of formsOrder) {
+    if (!formToShow[form]) continue;
+    const buildFn = sectionComponents[form];
+    if (!buildFn) continue;
+    sectionElements.push(<View key={form}>{buildFn()}</View>);
+  }
+
+  // Pre-build theme bar
+  const themeBarViews: React.ReactNode[] = [];
+  if (settings.themeColor) {
+    themeBarViews.push(
+      <View
+        key="theme-bar"
+        style={{
+          width: spacing["full"],
+          height: spacing[3.5],
+          backgroundColor: themeColor,
+        }}
+      />
+    );
+  }
 
   return (
-    <>
-      <Document title={`${name} Resume`} author={name} producer={"ResumeMaker"}>
-        <Page
-          size={documentSize === "A4" ? "A4" : "LETTER"}
+    <Document title={`${name} Resume`} author={name} producer={"ResumeMaker"}>
+      <Page
+        size={documentSize === "A4" ? "A4" : "LETTER"}
+        style={{
+          ...styles.flexCol,
+          color: DEFAULT_FONT_COLOR,
+          fontFamily,
+          fontSize: fontSize + "pt",
+        }}
+      >
+        {themeBarViews}
+        <View
           style={{
             ...styles.flexCol,
-            color: DEFAULT_FONT_COLOR,
-            fontFamily,
-            fontSize: fontSize + "pt",
+            padding: `${spacing[0]} ${spacing[20]}`,
           }}
         >
-          {Boolean(settings.themeColor) && (
-            <View
-              style={{
-                width: spacing["full"],
-                height: spacing[3.5],
-                backgroundColor: themeColor,
-              }}
-            />
-          )}
-          <View
-            style={{
-              ...styles.flexCol,
-              padding: `${spacing[0]} ${spacing[20]}`,
-            }}
-          >
-            <ResumePDFProfile
-              profile={profile}
-              themeColor={themeColor}
-              isPDF={isPDF}
-            />
-            {showFormsOrder.map((form) => {
-              const Component = formTypeToComponent[form];
-              if (!Component) return null;
-              return <Component key={form} />;
-            })}
-          </View>
-        </Page>
-      </Document>
-      <SuppressResumePDFErrorMessage />
-    </>
+          <ResumePDFProfile
+            profile={profile}
+            themeColor={themeColor}
+            isPDF={isPDF}
+          />
+          {sectionElements}
+        </View>
+      </Page>
+    </Document>
   );
 };

@@ -40,7 +40,7 @@ export const useSetDefaultScale = ({
       const resumeHeightPx = defaultResumeHeightRem * PX_PER_REM;
       const height = documentSize === "A4" ? A4_HEIGHT_PX : LETTER_HEIGHT_PX;
       const defaultScale = Math.round((resumeHeightPx / height) * 100) / 100;
-      return defaultScale;
+      return Math.max(0.75, defaultScale);
     };
 
     const setDefaultScale = () => {

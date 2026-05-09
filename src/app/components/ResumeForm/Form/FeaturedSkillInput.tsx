@@ -17,7 +17,7 @@ export const FeaturedSkillInput = ({
   circleColor?: string;
 }) => {
   return (
-    <div className={`flex ${className}`}>
+    <div className={`flex items-center ${className}`}>
       <input
         type="text"
         value={skill}

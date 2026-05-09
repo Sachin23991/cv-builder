@@ -1,5 +1,6 @@
 /**
  * db.js — MongoDB connection via Mongoose
+ * Fix #25: Connection pool tuned for high concurrency
  */
 import mongoose from 'mongoose';
 
@@ -11,7 +12,14 @@ export async function connectDB() {
   }
 
   try {
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+      // Fix #25 — pool size for concurrent load
+      maxPoolSize: 50,
+      minPoolSize: 5,
+      socketTimeoutMS: 45_000,
+      serverSelectionTimeoutMS: 5_000,
+      heartbeatFrequencyMS: 10_000,
+    });
     console.log('✅ Connected to MongoDB');
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
@@ -20,6 +28,10 @@ export async function connectDB() {
 
   mongoose.connection.on('error', (err) => {
     console.error('MongoDB runtime error:', err.message);
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.warn('⚠️  MongoDB disconnected');
   });
 }
 

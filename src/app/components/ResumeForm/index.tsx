@@ -1,6 +1,5 @@
 "use client";
 import { useState, lazy, Suspense } from "react";
-import dynamic from "next/dynamic";
 import {
   useAppSelector,
   useSaveStateToLocalStorageOnChange,
@@ -9,7 +8,6 @@ import {
 import { ShowForm, selectFormsOrder } from "lib/redux/settingsSlice";
 import { ProfileForm } from "components/ResumeForm/ProfileForm";
 import { ThemeForm } from "components/ResumeForm/ThemeForm";
-import { FlexboxSpacer } from "components/FlexboxSpacer";
 import { cx } from "lib/cx";
 
 // Lazy load form components
@@ -57,13 +55,13 @@ export const ResumeForm = () => {
   return (
     <div
       className={cx(
-        "flex justify-center scrollbar-thin scrollbar-track-gray-100 md:h-[calc(100vh-var(--top-nav-bar-height))] md:justify-end md:overflow-y-scroll",
+        "flex w-full justify-start",
         isHover ? "scrollbar-thumb-gray-200" : "scrollbar-thumb-gray-100"
       )}
       onMouseOver={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
     >
-      <section className="flex max-w-2xl flex-col gap-8 p-[var(--resume-padding)]">
+      <section className="flex w-full max-w-none min-w-0 flex-col gap-6 p-[var(--resume-padding)]">
         <ProfileForm />
         {formsOrder.map((form) => {
           const Component = formTypeToComponent[form];
@@ -77,7 +75,6 @@ export const ResumeForm = () => {
         <ThemeForm />
         <br />
       </section>
-      <FlexboxSpacer maxWidth={50} className="hidden md:block" />
     </div>
   );
 };

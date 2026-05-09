@@ -28,7 +28,7 @@ export const TopNavBar = () => {
     <header
       ref={headerRef}
       aria-label="Site Header"
-      className="flex h-[var(--top-nav-bar-height)] items-center px-3 lg:px-12"
+      className="flex h-[var(--top-nav-bar-height)] items-center px-3 lg:px-12 print:hidden"
     >
       <div className="flex h-10 w-full items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
@@ -40,7 +40,7 @@ export const TopNavBar = () => {
             <Link
               key={text}
               className="rounded-md px-1.5 py-2 text-slate-700 hover:bg-sky-50 hover:text-sky-600 focus-visible:bg-sky-50 lg:px-4"
-              href={href}
+              href={href as string}
             >
               {text}
             </Link>

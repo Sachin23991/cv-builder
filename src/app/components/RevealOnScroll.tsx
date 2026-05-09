@@ -19,9 +19,7 @@ export function RevealOnScroll({
     if (!ref.current) return;
     
     // Lazy load GSAP only when component mounts
-    import("gsap").then(({ gsap }) => {
-      import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
-        gsap.registerPlugin(ScrollTrigger);
+    import("lib/gsap").then(({ gsap, ScrollTrigger }) => {
         
         const ctx = gsap.context(() => {
           const animations = {
@@ -53,7 +51,6 @@ export function RevealOnScroll({
 
         return () => ctx.revert();
       });
-    });
   }, [direction, delay]);
 
   return (

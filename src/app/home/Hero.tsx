@@ -2,16 +2,16 @@ import Link from "next/link";
 import { FlexboxSpacer } from "components/FlexboxSpacer";
 import { AutoTypingResume } from "home/AutoTypingResume";
 import { useEffect, useRef } from "react";
-import gsap from "gsap";
+import { gsap } from "lib/gsap";
 
 export const Hero = () => {
   const headlineRef = useRef<HTMLHeadingElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return undefined;
     const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
+    if (prefersReduced) return undefined;
 
     const headline = headlineRef.current;
     if (headline) {
@@ -43,6 +43,7 @@ export const Hero = () => {
         preview.removeEventListener("mouseleave", handleLeave);
       };
     }
+    return undefined;
   }, []);
 
   return (

@@ -201,8 +201,10 @@ export const resumeSlice = createSlice({
       } else {
         const { idx, skill, rating } = action.payload;
         const featuredSkill = draft.skills.featuredSkills[idx];
-        featuredSkill.skill = skill;
-        featuredSkill.rating = rating;
+        if (featuredSkill) {
+          featuredSkill.skill = skill;
+          featuredSkill.rating = rating;
+        }
       }
     },
     changeCustom: (
@@ -320,16 +322,16 @@ export const resumeSlice = createSlice({
       const { form } = action.payload;
       switch (form) {
         case "workExperiences": {
-          draft.workExperiences.push(structuredClone(initialWorkExperience));
-          return draft;
+          draft.workExperiences.push(JSON.parse(JSON.stringify(initialWorkExperience)));
+          break;
         }
         case "educations": {
-          draft.educations.push(structuredClone(initialEducation));
-          return draft;
+          draft.educations.push(JSON.parse(JSON.stringify(initialEducation)));
+          break;
         }
         case "projects": {
-          draft.projects.push(structuredClone(initialProject));
-          return draft;
+          draft.projects.push(JSON.parse(JSON.stringify(initialProject)));
+          break;
         }
       }
     },
@@ -347,16 +349,16 @@ export const resumeSlice = createSlice({
           (idx === 0 && direction === "up") ||
           (idx === draft[form].length - 1 && direction === "down")
         ) {
-          return draft;
+          return;
         }
 
         const section = draft[form][idx];
         if (direction === "up") {
-          draft[form][idx] = draft[form][idx - 1];
-          draft[form][idx - 1] = section;
+          (draft[form] as any)[idx] = draft[form][idx - 1];
+          (draft[form] as any)[idx - 1] = section;
         } else {
-          draft[form][idx] = draft[form][idx + 1];
-          draft[form][idx + 1] = section;
+          (draft[form] as any)[idx] = draft[form][idx + 1];
+          (draft[form] as any)[idx + 1] = section;
         }
       }
     },

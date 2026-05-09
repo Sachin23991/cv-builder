@@ -17,16 +17,24 @@ export const ResumePDFCustom = ({
   themeColor: string;
   showBulletPoints: boolean;
 }) => {
-  const { descriptions } = custom;
+  const { descriptions = [] } = custom || {};
 
   return (
     <ResumePDFSection themeColor={themeColor} heading={heading}>
-      <View style={{ ...styles.flexCol }}>
-        <ResumePDFBulletList
-          items={descriptions}
-          showBulletPoints={showBulletPoints}
-        />
-      </View>
+      {(() => {
+        const safeDescriptions = (descriptions || []).filter(
+          (d) => typeof d === "string" && d.trim() !== ""
+        );
+        if (safeDescriptions.length === 0) return null;
+        return (
+          <View style={{ ...styles.flexCol }}>
+            <ResumePDFBulletList
+              items={safeDescriptions}
+              showBulletPoints={showBulletPoints}
+            />
+          </View>
+        );
+      })()}
     </ResumePDFSection>
   );
 };

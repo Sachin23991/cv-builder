@@ -39,6 +39,7 @@ export const groupTextItemsIntoLines = (textItems: TextItems): Lines => {
     for (let i = line.length - 1; i > 0; i--) {
       const currentItem = line[i];
       const leftItem = line[i - 1];
+      if (!currentItem || !leftItem) continue;
       const leftItemXEnd = leftItem.x + leftItem.width;
       const distance = currentItem.x - leftItemXEnd;
       if (distance <= typicalCharWidth) {
@@ -59,8 +60,8 @@ export const groupTextItemsIntoLines = (textItems: TextItems): Lines => {
 
 // Sometimes a space is lost while merging adjacent text items. This accounts for some of those cases
 const shouldAddSpaceBetweenText = (leftText: string, rightText: string) => {
-  const leftTextEnd = leftText[leftText.length - 1];
-  const rightTextStart = rightText[0];
+  const leftTextEnd = leftText[leftText.length - 1] ?? "";
+  const rightTextStart = rightText[0] ?? "";
   const conditions = [
     [":", ",", "|", ".", ...BULLET_POINTS].includes(leftTextEnd) &&
       rightTextStart !== " ",

@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { ExpanderWithHeightTransition } from "components/ExpanderWithHeightTransition";
 import {
   DeleteIconButton,
@@ -27,6 +28,164 @@ import {
   deleteSectionInFormByIdx,
   moveSectionInForm,
 } from "lib/redux/resumeSlice";
+
+// ─── AI integration ───────────────────────────────────────────
+const FORM_TO_AI_SECTION: { [section in ShowForm]?: string } = {
+  workExperiences: "workExperience",
+  educations: "education",
+  projects: "project",
+  skills: "skills",
+  custom: "custom",
+};
+
+// Each section's attributes the user can ask AI to write
+interface AttributeOption {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+const SECTION_ATTRIBUTES: { [section in ShowForm]?: AttributeOption[] } = {
+  workExperiences: [
+    { key: "company", label: "Company Name", icon: "🏢" },
+    { key: "jobTitle", label: "Job Title", icon: "💼" },
+    { key: "date", label: "Date Range", icon: "📅" },
+    { key: "descriptions", label: "Description / Bullets", icon: "📝" },
+  ],
+  educations: [
+    { key: "school", label: "School Name", icon: "🏫" },
+    { key: "degree", label: "Degree", icon: "🎓" },
+    { key: "gpa", label: "GPA", icon: "📊" },
+    { key: "date", label: "Date Range", icon: "📅" },
+    { key: "descriptions", label: "Description / Bullets", icon: "📝" },
+  ],
+  projects: [
+    { key: "project", label: "Project Name", icon: "🚀" },
+    { key: "date", label: "Date Range", icon: "📅" },
+    { key: "descriptions", label: "Description / Bullets", icon: "📝" },
+  ],
+  skills: [
+    { key: "descriptions", label: "Skills List", icon: "🛠️" },
+  ],
+  custom: [
+    { key: "descriptions", label: "Content / Bullets", icon: "📝" },
+  ],
+};
+
+export const openResumeAI = (section: string, itemIndex = 0, attribute = "descriptions") => {
+  window.dispatchEvent(
+    new CustomEvent("resumemaker:open-ai", {
+      detail: { mode: "resume", section, itemIndex, attribute },
+    })
+  );
+};
+
+// ─── Sparkles SVG icon ────────────────────────────────────────
+const SparklesIconSVG = ({ className = "h-3 w-3" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+    />
+  </svg>
+);
+
+// ─── Ask AI Dropdown ──────────────────────────────────────────
+const AskAIDropdown = ({ form, itemIndex = 0 }: { form: ShowForm; itemIndex?: number }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const attributes = SECTION_ATTRIBUTES[form];
+  const aiSection = FORM_TO_AI_SECTION[form];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return undefined;
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    if (isOpen) {
+      document.addEventListener("keydown", handleEsc);
+      return () => document.removeEventListener("keydown", handleEsc);
+    }
+    return undefined;
+  }, [isOpen]);
+
+  if (!attributes || !aiSection) return null;
+
+  return (
+    <div ref={dropdownRef} className="ask-ai-dropdown-wrapper">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        className={`ask-ai-trigger ${isOpen ? "ask-ai-trigger-active" : ""}`}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+      >
+        <SparklesIconSVG className="h-3.5 w-3.5" />
+        Ask AI
+        <svg
+          className={`ask-ai-chevron ${isOpen ? "ask-ai-chevron-open" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2.5}
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="ask-ai-menu" role="menu">
+          <div className="ask-ai-menu-header">
+            <SparklesIconSVG className="h-3.5 w-3.5 text-indigo-500" />
+            <span>What should AI write?</span>
+          </div>
+          <div className="ask-ai-menu-items">
+            {attributes.map((attr) => (
+              <button
+                key={attr.key}
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  openResumeAI(aiSection, itemIndex, attr.key);
+                }}
+                className="ask-ai-menu-item"
+              >
+                <span className="ask-ai-menu-item-icon">{attr.icon}</span>
+                <span className="ask-ai-menu-item-label">{attr.label}</span>
+                <svg className="ask-ai-menu-item-arrow" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 /**
  * BaseForm is the bare bone form, i.e. just the outline with no title and no control buttons.
@@ -100,6 +259,8 @@ export const Form = ({
           />
         </div>
         <div className="flex items-center gap-0.5">
+          {/* Single "Ask AI" dropdown for the whole section */}
+          <AskAIDropdown form={form} />
           {!isFirstForm && (
             <MoveIconButton type="up" onClick={handleMoveClick} />
           )}
@@ -165,7 +326,8 @@ export const FormSection = ({
       )}
       <div className="relative grid grid-cols-6 gap-3">
         {children}
-        <div className={`absolute right-0 top-0 flex gap-0.5 `}>
+        <div className={`absolute right-0 top-0 flex gap-0.5`}>
+          {/* No per-item Ask AI button — handled at section level */}
           <div
             className={`transition-all duration-300 ${
               showMoveUp ? "" : "invisible opacity-0"

@@ -23,9 +23,9 @@ export const matchEmail = (item: TextItem) => item.text.match(/\S+@\S+\.\S+/);
 const hasAt = (item: TextItem) => item.text.includes("@");
 
 // Phone
-// Simple phone regex that matches (xxx)-xxx-xxxx where () and - are optional, - can also be space
+// Matches US format (xxx)-xxx-xxxx, international +xx xxx xxx xxxx, and variations
 export const matchPhone = (item: TextItem) =>
-  item.text.match(/\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}/);
+  item.text.match(/(?:\+\d{1,3}[\s-]?)?\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,4}/);
 const hasParenthesis = (item: TextItem) => /\([0-9]+\)/.test(item.text);
 
 // Location
@@ -42,6 +42,12 @@ const matchUrlHttpFallback = (item: TextItem) =>
 // Match www.xxx.xxx
 const matchUrlWwwFallback = (item: TextItem) =>
   item.text.match(/www\.\S+\.\S+/);
+// Match LinkedIn profile URLs specifically
+const matchLinkedIn = (item: TextItem) =>
+  item.text.match(/linkedin\.com\/in\/\S+/i);
+// Match GitHub profile URLs specifically
+const matchGitHub = (item: TextItem) =>
+  item.text.match(/github\.com\/\S+/i);
 const hasSlash = (item: TextItem) => item.text.includes("/");
 
 // Summary
@@ -103,6 +109,8 @@ const LOCATION_FEATURE_SETS: FeatureSet[] = [
 
 // URL -> match url regex xxx.xxx/xxx
 const URL_FEATURE_SETS: FeatureSet[] = [
+  [matchLinkedIn, 4, true],
+  [matchGitHub, 4, true],
   [matchUrl, 4, true],
   [matchUrlHttpFallback, 3, true],
   [matchUrlWwwFallback, 3, true],

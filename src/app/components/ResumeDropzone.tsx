@@ -48,7 +48,8 @@ export const ResumeDropzone = ({
 
   const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const newFile = event.dataTransfer.files[0];
+    const newFile = event.dataTransfer.files?.[0];
+    if (!newFile) return;
     if (newFile.name.endsWith(".pdf")) {
       setHasNonPdfFile(false);
       setNewFile(newFile);
@@ -63,6 +64,7 @@ export const ResumeDropzone = ({
     if (!files) return;
 
     const newFile = files[0];
+    if (!newFile) return;
     setNewFile(newFile);
   };
 
