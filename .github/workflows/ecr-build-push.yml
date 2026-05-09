@@ -1,0 +1,192 @@
+name: Build & Push Docker images to ECR
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # for AWS OIDC if you use AWS_ROLE_TO_ASSUME
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+  # ECR repositories (create them once in AWS, or let this workflow create them)
+  ECR_REPOSITORY_FRONTEND: ${{ vars.ECR_REPOSITORY_FRONTEND }}
+  ECR_REPOSITORY_BACKEND: ${{ vars.ECR_REPOSITORY_BACKEND }}
+
+  # Frontend build-time env (baked into browser bundle)
+  NEXT_PUBLIC_BACKEND_URL: ${{ vars.NEXT_PUBLIC_BACKEND_URL }}
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required repo variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(AWS_REGION ECR_REPOSITORY_FRONTEND ECR_REPOSITORY_BACKEND NEXT_PUBLIC_BACKEND_URL)
+          for v in "${required[@]}"; do
+            if [ -z "${!v:-}" ]; then
+              echo "Missing required GitHub Repository Variable: $v"
+              exit 1
+            fi
+          done
+
+      # Recommended (secure): use OIDC with an IAM Role
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Fallback: long-lived access keys
+      - name: Configure AWS credentials (access keys)
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR repos exist + keep last 2 images
+        shell: bash
+        env:
+          FRONTEND_REPO: ${{ env.ECR_REPOSITORY_FRONTEND }}
+          BACKEND_REPO: ${{ env.ECR_REPOSITORY_BACKEND }}
+        run: |
+          set -euo pipefail
+          lifecycle='{"rules":[{"rulePriority":1,"description":"Keep last 2 images for rollback","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":2},"action":{"type":"expire"}}]}'
+
+          for repo in "$FRONTEND_REPO" "$BACKEND_REPO"; do
+            if ! aws ecr describe-repositories --repository-names "$repo" >/dev/null 2>&1; then
+              aws ecr create-repository \
+                --repository-name "$repo" \
+                --image-scanning-configuration scanOnPush=true \
+                >/dev/null
+            fi
+
+            # Lifecycle policy helps auto-cleanup (runs asynchronously in ECR)
+            aws ecr put-lifecycle-policy \
+              --repository-name "$repo" \
+              --lifecycle-policy-text "$lifecycle" \
+              >/dev/null
+          done
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push FRONTEND image
+        shell: bash
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          tags=(
+            "${REGISTRY}/${ECR_REPOSITORY_FRONTEND}:${SHA_TAG}"
+          )
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            tags+=("${REGISTRY}/${ECR_REPOSITORY_FRONTEND}:latest")
+          fi
+
+          tagArgs=()
+          for t in "${tags[@]}"; do
+            tagArgs+=("--tag" "$t")
+          done
+
+          docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            "${tagArgs[@]}" \
+            --build-arg NEXT_PUBLIC_BACKEND_URL="${NEXT_PUBLIC_BACKEND_URL}" \
+            --build-arg BACKEND_URL="${NEXT_PUBLIC_BACKEND_URL}" \
+            .
+
+      - name: Build & push BACKEND image
+        shell: bash
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          tags=(
+            "${REGISTRY}/${ECR_REPOSITORY_BACKEND}:${SHA_TAG}"
+          )
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            tags+=("${REGISTRY}/${ECR_REPOSITORY_BACKEND}:latest")
+          fi
+
+          tagArgs=()
+          for t in "${tags[@]}"; do
+            tagArgs+=("--tag" "$t")
+          done
+
+          docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            "${tagArgs[@]}" \
+            -f backend/Dockerfile \
+            .
+
+      # ECR lifecycle policy can take time to apply; this deletes immediately.
+      - name: Prune ECR images (keep newest 2)
+        shell: bash
+        env:
+          FRONTEND_REPO: ${{ env.ECR_REPOSITORY_FRONTEND }}
+          BACKEND_REPO: ${{ env.ECR_REPOSITORY_BACKEND }}
+        run: |
+          set -euo pipefail
+
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+
+          prune_repo() {
+            local repo="$1"
+            echo "Pruning $repo (keep newest 2)…"
+
+            local digests
+            digests=$(aws ecr describe-images \
+              --repository-name "$repo" \
+              --query 'sort_by(imageDetails,&imagePushedAt)[].imageDigest' \
+              --output json)
+
+            local count
+            count=$(echo "$digests" | jq 'length')
+            if [ "$count" -le 2 ]; then
+              echo "Nothing to prune (images=$count)"
+              return 0
+            fi
+
+            echo "$digests" | jq -r '.[0:-2][]' | while read -r digest; do
+              [ -z "$digest" ] && continue
+              aws ecr batch-delete-image \
+                --repository-name "$repo" \
+                --image-ids imageDigest="$digest" \
+                >/dev/null
+              echo "Deleted $digest"
+            done
+          }
+
+          prune_repo "$FRONTEND_REPO"
+          prune_repo "$BACKEND_REPO"

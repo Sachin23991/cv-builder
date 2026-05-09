@@ -4,6 +4,7 @@ import { AppProviders } from "components/AppProviders";
 import { AIAssistantClient } from "components/AIAssistantClient";
 import { AnalyticsLoader } from "components/AnalyticsLoader";
 import { ErrorBoundary } from "components/ErrorBoundary";
+
 import { DM_Sans, Syne, JetBrains_Mono } from "next/font/google";
 
 const dmSans = DM_Sans({
@@ -47,9 +48,7 @@ export default function RootLayout({
       <body>
         <AppProviders>
           <TopNavBar />
-          <ErrorBoundary label="Application crashed">
-            {children}
-          </ErrorBoundary>
+          <ErrorBoundary label="Application crashed">{children}</ErrorBoundary>
           <AIAssistantClient />
           <AnalyticsLoader />
         </AppProviders>

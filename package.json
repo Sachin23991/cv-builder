@@ -4,10 +4,10 @@
   "description": "An open-source, feature-rich resume builder and parser built with Next.js, Redux, and Tailwind CSS. Create, edit, preview, and export professional resumes with ease.",
   "main": "index.js",
   "scripts": {
-    "start": "next dev",
+    "start": "next start",
     "dev": "next dev",
     "backend:start": "cd backend && npm start",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
+    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
     "lint": "next lint",
     "test": "jest"
   },
@@ -38,6 +38,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^20.2.5",
     "@types/react": "^18.2.7",
+    "@types/react-dom": "^18.2.7",
     "autoprefixer": "^10.4.14",
     "eslint": "^8.41.0",
     "eslint-config-next": "^13.4.4",

@@ -445,7 +445,7 @@ const Step3SectionsTable = ({
   };
 
   for (let i = 0; i < sectionsEntries.length; i++) {
-    const sectionBackgroundColor = BACKGROUND_COLORS[i % 6];
+    const sectionBackgroundColor = BACKGROUND_COLORS[i % BACKGROUND_COLORS.length]!;
     const [sectionTitle, lines] = sectionsEntries[i] as [string, Lines];
     table.push([
       sectionTitle === "profile" ? "" : lineCounter,
