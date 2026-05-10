@@ -103,6 +103,22 @@ A simple, production-friendly approach is:
 
 You can run without CloudFront, but CloudFront helps deliver the frontend in milliseconds globally.
 
+### Why we’re not using EKS here (and why ECR still matters)
+- **ECR** is only a *container registry* (where images live). You can use ECR with **App Runner**, **ECS**, or **EKS**.
+- **EKS** is Kubernetes. It’s powerful, but it adds extra operational work (cluster lifecycle, networking/ingress, upgrades, observability, RBAC, etc.).
+- For this repo (2 services: frontend + backend), **App Runner** is usually the simplest “24/7” solution:
+  - Always-on with **min instances = 1**
+  - Simple health checks and logging
+  - Easy container redeploys from ECR
+
+When EKS *does* make sense:
+- You already run Kubernetes for other services
+- You need advanced traffic routing, service mesh, custom autoscaling, or many microservices
+
+If you choose EKS later:
+- Keep the same CI step (build + push images to ECR)
+- Add a deploy step (Helm/kubectl) to update Kubernetes manifests to the new image tag
+
 ---
 
 ## 4) Environment variables you must plan for
@@ -151,6 +167,14 @@ docker build \
 docker build -f backend/Dockerfile -t resumemaker-backend:latest .
 ```
 
+### Why there is a Dockerfile in the repo root (and where docker-compose fits)
+- A **Dockerfile** builds **one** container image.
+  - Root `Dockerfile` = **frontend** image (Next.js standalone server)
+  - `backend/Dockerfile` = **backend** image (Express API)
+- `docker-compose.yml` (if you add one) is just an **orchestrator** to run multiple containers together.
+  - It still needs Dockerfiles (to build) or prebuilt images (to pull).
+  - AWS services like **App Runner** don’t use docker-compose; they deploy containers from ECR directly.
+
 ---
 
 ## 6) Deploy with AWS App Runner (recommended for simplicity)
@@ -193,6 +217,33 @@ You have two options:
 
 #### Option 1 — Manual build + push (one-off)
 Use this if you’re testing or doing the first deployment.
+
+##### (Optional) Smoke test the containers on the build machine (e.g., EC2)
+After you build both images in section **5)**, you can run them to verify the containers boot.
+
+Backend (requires env vars):
+
+```bash
+docker run --rm \
+  --name resumemaker-backend \
+  -p 3001:3001 \
+  --env-file backend/.env \
+  resumemaker-backend:latest
+```
+
+Frontend (no runtime env needed — `NEXT_PUBLIC_*` is baked in at build time):
+
+```bash
+docker run --rm \
+  --name resumemaker-frontend \
+  -p 3000:3000 \
+  resumemaker-frontend:latest
+```
+
+Important:
+- For an EC2 test, `NEXT_PUBLIC_BACKEND_URL` must be reachable from your browser (don’t use `http://localhost:3001` unless you’re testing locally on your own machine).
+- For the smoke test you can set `NEXT_PUBLIC_BACKEND_URL` to `http://<EC2_PUBLIC_IP>:3001` while building the frontend.
+- For the real production build, rebuild the frontend image with the final domain (CloudFront/custom domain).
 
 ##### Step B1 — Login Docker to ECR
 ```bash
@@ -238,6 +289,51 @@ You have two choices:
    - Create an IAM user with ECR permissions
    - Store keys in GitHub secrets: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 
+###### OIDC (recommended) — how to get `AWS_ROLE_TO_ASSUME`
+AWS Console steps:
+
+1) IAM → **Identity providers** → **Add provider** → OpenID Connect
+   - Provider URL: `https://token.actions.githubusercontent.com`
+   - Audience: `sts.amazonaws.com`
+2) IAM → **Roles** → **Create role** → Web identity
+   - Choose the GitHub OIDC provider
+3) Add a trust policy condition to restrict usage to your repo + branch.
+   Example trust policy (replace placeholders):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+          "token.actions.githubusercontent.com:sub": "repo:<GITHUB_OWNER>/<GITHUB_REPO>:ref:refs/heads/main"
+        }
+      }
+    }
+  ]
+}
+```
+
+4) Attach permissions (policy example below)
+5) Copy the role ARN (looks like `arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME>`) and paste into GitHub Secret: `AWS_ROLE_TO_ASSUME`
+
+###### Access keys (fallback) — how to get `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
+AWS Console steps:
+
+1) IAM → **Users** → **Create user**
+2) Attach the ECR permissions policy
+3) Open the user → **Security credentials** → **Create access key**
+4) Copy the values into GitHub Secrets:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+
 At minimum, the principal needs ECR permissions like:
 - `ecr:GetAuthorizationToken`
 - `ecr:CreateRepository`, `ecr:DescribeRepositories`
@@ -245,6 +341,33 @@ At minimum, the principal needs ECR permissions like:
 - `ecr:DescribeImages`, `ecr:BatchDeleteImage`
 - `ecr:InitiateLayerUpload`, `ecr:UploadLayerPart`, `ecr:CompleteLayerUpload`
 - `ecr:BatchCheckLayerAvailability`, `ecr:PutImage`
+
+Example IAM permissions policy you can attach to the role/user (broad but practical):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:CreateRepository",
+        "ecr:DescribeRepositories",
+        "ecr:PutLifecyclePolicy",
+        "ecr:DescribeImages",
+        "ecr:BatchDeleteImage",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
 
 ##### Step B2 — Set GitHub Variables (non-secret)
 GitHub → **Settings → Secrets and variables → Actions → Variables**
@@ -267,6 +390,11 @@ Recommended:
 OR fallback:
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
+
+Important:
+- For this workflow, you **do not need** to add your app runtime secrets (like `MONGODB_URI`, `JWT_SECRET`, `OPENAI_API_KEY`, `OPENROUTER_*`) to GitHub.
+- Those belong in the **runtime environment** of your backend container (App Runner/ECS), or in **AWS Secrets Manager/SSM Parameter Store**.
+- The only app-related value the workflow needs is `NEXT_PUBLIC_BACKEND_URL`, and that should be a **GitHub Variable** (not a secret) because it is baked into the frontend bundle at build time.
 
 ##### Step B4 — Push to `main`
 Once the variables/secrets are set, every push to `main` will:
