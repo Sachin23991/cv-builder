@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - master
   workflow_dispatch:
 
 permissions:
@@ -99,7 +100,7 @@ jobs:
           tags=(
             "${REGISTRY}/${ECR_REPOSITORY_FRONTEND}:${SHA_TAG}"
           )
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+          if [ "${GITHUB_REF_NAME}" = "main" ] || [ "${GITHUB_REF_NAME}" = "master" ]; then
             tags+=("${REGISTRY}/${ECR_REPOSITORY_FRONTEND}:latest")
           fi
 
@@ -129,7 +130,7 @@ jobs:
           tags=(
             "${REGISTRY}/${ECR_REPOSITORY_BACKEND}:${SHA_TAG}"
           )
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+          if [ "${GITHUB_REF_NAME}" = "main" ] || [ "${GITHUB_REF_NAME}" = "master" ]; then
             tags+=("${REGISTRY}/${ECR_REPOSITORY_BACKEND}:latest")
           fi
 

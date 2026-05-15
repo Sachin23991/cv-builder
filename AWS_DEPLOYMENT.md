@@ -177,7 +177,15 @@ docker build -f backend/Dockerfile -t resumemaker-backend:latest .
 
 ---
 
-## 6) Deploy with AWS App Runner (recommended for simplicity)
+## 6) Deploy options on AWS
+
+If you don’t see **App Runner** in the AWS Console, it’s usually because:
+- Your current AWS **region doesn’t support it**, or
+- You prefer to stay inside the **free-tier EC2** style setup.
+
+Below are two practical deployment options that work well with ECR images.
+
+### Option A — AWS App Runner (simplest if available)
 
 ### Step A — Create ECR repositories
 (One for each image.)
@@ -268,12 +276,12 @@ Use this for “push code → automatically build → push to ECR”.
 This repo includes a ready workflow:
 - `.github/workflows/ecr-build-push.yml`
 
-What it does on every push to `main`:
+What it does on every push to `main`/`master`:
 - Builds **frontend** image (root `Dockerfile`) and pushes to ECR
 - Builds **backend** image (`backend/Dockerfile`) and pushes to ECR
 - Tags each image as:
   - `:<git_sha>` (immutable)
-  - `:latest` (only on `main`)
+  - `:latest` (only on `main`/`master`)
 - Keeps only the **newest 2 images** in each repo (rollback-safe)
 - Uses BuildKit caching so rebuilds are faster after the first run
 
@@ -396,8 +404,8 @@ Important:
 - Those belong in the **runtime environment** of your backend container (App Runner/ECS), or in **AWS Secrets Manager/SSM Parameter Store**.
 - The only app-related value the workflow needs is `NEXT_PUBLIC_BACKEND_URL`, and that should be a **GitHub Variable** (not a secret) because it is baked into the frontend bundle at build time.
 
-##### Step B4 — Push to `main`
-Once the variables/secrets are set, every push to `main` will:
+##### Step B4 — Push to `main`/`master`
+Once the variables/secrets are set, every push to `main`/`master` will:
 - Build images
 - Push to ECR
 - Prune old images (keep last 2)
@@ -421,6 +429,206 @@ In the AWS Console → **App Runner**:
 - Scaling: min instances = 1
 
 > If you’re using separate domains for frontend and backend, set backend `CORS_ORIGINS` to the frontend domain.
+
+---
+
+### Option C — AWS ECS (Fargate or ECS on EC2)
+
+Yes, you can absolutely run these ECR images on **ECS**.
+
+When to choose ECS:
+- You want a managed scheduler (restarts containers, health checks, logs)
+- You don’t want to hand-manage `docker run` on a server
+
+Cost note:
+- **Fargate** is easiest but typically **not free-tier**.
+- **ECS on EC2** can be “free-tier friendly” if you run on a small EC2 instance, but you still manage the EC2 host.
+
+Recommended ECS architecture for this repo:
+- 1 **Application Load Balancer (ALB)**
+- 2 **Target Groups**:
+  - `frontend-tg` → container port `3000`
+  - `backend-tg` → container port `3001`
+- ALB Listener rules:
+  - `/api/*` → `backend-tg`
+  - `/*` → `frontend-tg`
+
+High-level steps:
+
+1) Create an ECS cluster
+  - Choose **Fargate** (simpler) or **EC2** capacity (cheaper sometimes)
+
+2) Create task definitions (one for frontend, one for backend)
+  - Images: from your ECR repos
+  - Frontend container port: `3000`
+  - Backend container port: `3001`
+  - Backend env vars: `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `CORS_ORIGINS`, optional AI keys
+
+3) Create an ALB + listener + target groups
+  - Backend health check path: `/api/health`
+  - Frontend health check path: `/`
+
+4) Create ECS services
+  - Desired count: `1` (24×7)
+  - Attach each service to its target group
+
+5) Important: how ECS picks up NEW images
+  - ECS does **not** automatically redeploy when you push a new image to ECR.
+  - You must trigger a deploy by either:
+    - updating the task definition to the new image tag (recommended: use `:<git_sha>`), then updating the service, OR
+    - forcing a new deployment (works best if you configure your cluster to always pull fresh images)
+
+If you want “push to GitHub → build/push to ECR → auto deploy to ECS”, tell me whether you’ll use:
+- **Fargate** or **ECS on EC2**, and your planned `ECS_CLUSTER` + service names.
+Then I can extend the GitHub Actions workflow to update the ECS services automatically.
+
+---
+
+### Option B — EC2 + Docker (free-tier friendly, works in any region)
+
+This option runs both containers on a single EC2 instance. It’s simple and works even when App Runner is unavailable.
+
+#### Step 1 — Launch an EC2 instance
+- Ubuntu 22.04 LTS (recommended)
+- Instance type:
+  - Build/test: `t3.small` or bigger is smoother
+  - Runtime: `t3.micro` might work, but if you see OOM/restarts, move to `t3.small`
+- Security group inbound (minimum):
+  - SSH `22` from your IP
+  - HTTP `80` from anywhere
+  - HTTPS `443` from anywhere
+  - (Temporary testing only) `3000` and `3001` from your IP
+
+#### Step 2 — Allow EC2 to pull from ECR (recommended way)
+Attach an **IAM Role** to the EC2 instance with:
+- `AmazonEC2ContainerRegistryReadOnly`
+
+This avoids storing AWS keys on the server.
+
+#### Step 3 — Install Docker + AWS CLI on EC2
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-plugin awscli
+sudo usermod -aG docker ubuntu
+newgrp docker
+```
+
+#### Step 4 — Login to ECR from EC2
+
+```bash
+aws ecr get-login-password --region <region> | \
+  docker login --username AWS --password-stdin <account_id>.dkr.ecr.<region>.amazonaws.com
+```
+
+#### Step 5 — Create backend runtime env file on EC2
+Create a file like `~/resumemaker-backend.env` (do NOT commit it) with:
+- `NODE_ENV=production`
+- `MONGODB_URI=...`
+- `CORS_ORIGINS=https://<your-frontend-domain>`
+- `JWT_SECRET=...`
+- (Optional) AI keys
+
+#### Step 6 — Run the backend container (24×7)
+
+```bash
+docker pull <account_id>.dkr.ecr.<region>.amazonaws.com/resumemaker-backend:latest
+
+docker run -d \
+  --name resumemaker-backend \
+  --restart unless-stopped \
+  -p 127.0.0.1:3001:3001 \
+  --env-file ~/resumemaker-backend.env \
+  <account_id>.dkr.ecr.<region>.amazonaws.com/resumemaker-backend:latest
+```
+
+#### Step 7 — Run the frontend container (24×7)
+
+```bash
+docker pull <account_id>.dkr.ecr.<region>.amazonaws.com/resumemaker-frontend:latest
+
+docker run -d \
+  --name resumemaker-frontend \
+  --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  <account_id>.dkr.ecr.<region>.amazonaws.com/resumemaker-frontend:latest
+```
+
+#### Step 8 — Put a single domain in front (recommended)
+Install nginx on EC2 and reverse-proxy:
+- `/api/*` → backend `http://127.0.0.1:3001`
+- everything else → frontend `http://127.0.0.1:3000`
+
+This gives a clean single URL and avoids exposing ports `3000/3001` publicly.
+
+1) Install nginx:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y nginx
+```
+
+2) Create an nginx site config (replace `your-domain.com`):
+
+```bash
+sudo tee /etc/nginx/sites-available/resumemaker >/dev/null <<'EOF'
+server {
+  listen 80;
+  server_name your-domain.com;
+
+  # API to backend
+  location /api/ {
+    proxy_pass http://127.0.0.1:3001;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # Everything else to frontend
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+EOF
+```
+
+3) Enable the site and reload nginx:
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/resumemaker /etc/nginx/sites-enabled/resumemaker
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+4) Point your domain DNS A-record to the EC2 public IP.
+
+5) Enable HTTPS with Let’s Encrypt:
+
+```bash
+sudo apt-get install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+```
+
+#### Step 9 — Updating to the newest image
+ECR push does **not** automatically restart containers on EC2. To deploy the newest images:
+
+```bash
+docker pull <account_id>.dkr.ecr.<region>.amazonaws.com/resumemaker-backend:latest
+docker pull <account_id>.dkr.ecr.<region>.amazonaws.com/resumemaker-frontend:latest
+
+docker rm -f resumemaker-backend resumemaker-frontend
+
+# re-run the same docker run commands from Step 6 and Step 7
+```
+
+If you want, we can also add a GitHub Actions “deploy” step (SSH or SSM) to run the above automatically after each push.
 
 ---
 
