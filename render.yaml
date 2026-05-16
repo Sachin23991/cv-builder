@@ -11,6 +11,12 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        sync: false # You will add this manually in the Render Dashboard
+        sync: false # Add manually in Render Dashboard
       - key: CORS_ORIGINS
-        sync: false # You will add this manually in the Render Dashboard
+        sync: false # Add manually in Render Dashboard (your vercel url)
+      - key: JWT_SECRET
+        sync: false # Add a secure random string for login security
+      - key: OPENAI_API_KEY
+        sync: false # Add your OpenAI API key for AI features (optional)
+      - key: OPENROUTER_SITE_API_KEY
+        sync: false # Add OpenRouter key if you use OpenRouter instead of OpenAI (optional)
