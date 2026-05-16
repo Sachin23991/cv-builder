@@ -107,7 +107,7 @@ export default function Home() {
             &copy; {new Date().getFullYear()} ResumeMaker. All rights reserved.
           </p>
           <a
-            href="https://github.com/Sachin23991/Careerflow-resume-maker"
+            href="https://github.com/Sachin23991/cv-builder"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors duration-300 hover:text-slate-800"

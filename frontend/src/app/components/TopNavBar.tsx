@@ -47,7 +47,7 @@ export const TopNavBar = () => {
           ))}
           <div className="ml-1 mt-1">
             <iframe
-              src="https://ghbtns.com/github-btn.html?user=Sachin23991&repo=Careerflow-resume-maker&type=star&count=true"
+              src="https://ghbtns.com/github-btn.html?user=Sachin23991&repo=cv-builder&type=star&count=true"
               width="100"
               height="20"
               className="overflow-hidden border-none"
