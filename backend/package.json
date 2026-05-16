@@ -8,7 +8,13 @@
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "keywords": ["resume", "cv", "backend", "express", "mongodb"],
+  "keywords": [
+    "resume",
+    "cv",
+    "backend",
+    "express",
+    "mongodb"
+  ],
   "author": "Sachin",
   "license": "MIT",
   "dependencies": {
@@ -22,6 +28,8 @@
     "morgan": "^1.10.0",
     "nanoid": "^5.0.7",
     "node-fetch": "^3.3.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "zod": "^3.22.4"
   },
   "devDependencies": {

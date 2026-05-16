@@ -1,0 +1,17 @@
+name: Keep Render App Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render's 15-minute idle spin-down
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger for testing
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend Health Endpoint
+        run: |
+          # Replace the URL below with your actual Render deployment URL
+          curl -sS https://YOUR_RENDER_APP_URL.onrender.com/api/health > /dev/null
+          echo "Ping successful! Sent health check to Render app."
